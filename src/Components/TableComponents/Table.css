@@ -1,0 +1,38 @@
+.Table {
+    overflow: hidden;
+    table-layout: fixed;
+    border-collapse: collapse;
+    margin: auto;
+    box-shadow: 0px 10px 10px #ccc;
+    white-space: nowrap;
+    width: 100em;
+    max-width: 80%;
+    overflow-x: auto;
+}
+
+.Table thead {
+    background-color: #ccc;
+    color: #222;
+}
+
+.Table th, .Table td {
+    padding: 0.8rem;
+}
+
+.Table td {
+    border-top: 0.5px solid #ddd;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.Table tbody tr:hover {
+    background-color: #eee;
+}
+
+.expand {
+    width: 100%;
+}
+
+.actions svg {
+    cursor: pointer;
+}

@@ -1,0 +1,13 @@
+.register {
+    display: flex;
+    justify-content: space-between;
+}
+
+.left-h {
+    padding: 1rem;
+    padding-top: 1rem;
+    flex: 0.62;
+    display: flex;
+    gap: 2rem;
+    flex-direction: column;
+}
