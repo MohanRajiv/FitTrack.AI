@@ -1,0 +1,280 @@
+.hero {
+    display: flex;
+    justify-content: space-between;
+}
+
+.left-h {
+    padding: 1rem;
+    padding-top: 1rem;
+    flex: 0.62;
+    display: flex;
+    gap: 2rem;
+    flex-direction: column;
+}
+
+.right-h {
+    flex: 1;
+    position: relative;
+    background-color: transparent; 
+    width: 0;
+    height: 0;
+    border-top: 0px solid transparent;
+    border-bottom: 685px solid transparent;
+    border-right: 400px solid rgb(102, 33, 142); 
+}
+
+.the-best-tracker {
+    margin-top: 3rem;
+    background-color: #3d4245;
+    border-radius: 4rem;
+    width: fit-content;
+    padding: 24px 14px;
+    color: white;
+    margin-left: 18rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    letter-spacing: 1px;    
+    text-transform: uppercase;
+    white-space: nowrap; /* Prevent line breaks */
+    overflow: hidden;    /* Optional: hide overflow if needed */
+    text-overflow: ellipsis;
+    right: 120px;
+
+}
+
+.the-best-tracker>span {
+    z-index: 2;
+}
+
+.the-best-tracker>div {
+    position: absolute;
+    background-color: var(--dark-purple);
+    width: 6rem;
+    height: 80%;
+    left: 8px;
+    border-radius: 3rem;
+    z-index: 2;
+}
+
+.hero-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    text-transform: uppercase;
+    font-size: 4.5rem;
+    font-weight: bold;
+    color: white;    
+    margin-left: 15rem;
+    text-overflow: inherit;
+}
+
+.hero-text-two {
+    display: block;
+    text-transform: uppercase;
+    font-size: 3.75rem;
+    font-weight: bold;
+    color: white;    
+    margin-top: -0.9rem;
+    margin-left: 8rem;
+    white-space: nowrap; 
+}
+
+.hero-text-three {
+    display: block;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    font-style: 1rem;
+    font-weight: 200;
+    text-transform: none;
+    letter-spacing: 1px;
+    width: 80;
+    color: white;
+    margin-top: -0.5rem;
+    margin-left: 10rem;
+}
+
+.btn-two {
+    position: absolute;
+    padding: 0.7rem;
+    right: -20rem;
+    top: 1.5rem;
+    width: 7rem;
+    gap: 1rem;
+    font-weight: normal;
+    background-color: transparent;
+    border: 2px solid white;
+    color: white;
+    font-family: 'Orbitron', sans-serif; 
+    letter-spacing: 1px;
+    background-color: #3d4245;
+    border-radius: 10px;
+}
+
+.btn-two:hover {
+    cursor: pointer;
+    background-color: #35383a;
+    color: var(--purple);
+}
+
+.hero-image {
+    position: absolute;
+    top: 10rem;
+    right: -22rem;
+    width: 23rem;
+}
+
+.hero-image-back {
+    position: absolute;
+    top: 1rem;
+    right: -24rem;
+    z-index: -1;
+    width: 26.5rem;
+    transform: rotate(-12deg);
+    filter: invert(300%) sepia(120%) saturate(120%) hue-rotate(218deg) brightness(75%) contrast(250%);
+}
+
+.calories {
+    display: flex;
+    gap: 2rem; 
+    background-color: #3d4245;
+    border-radius: 5px;
+    padding: 1rem;
+    width: fit-content;
+    position: absolute;
+    top: 32rem;
+    right: 25.5rem;
+}
+
+.calories:hover{
+    background-color: var(--caloryCard);
+}
+
+.calories > img {
+    width: 3rem;
+}
+
+.calories > div {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.calories > div > :nth-child(1) {
+    color: var(--gray);
+}
+
+.calories > div > :nth-child(2) {
+    color: white;
+    font-size: 1.3rem;
+}
+
+.caloriesImage {
+    filter: invert(300%) sepia(120%) saturate(120%) hue-rotate(218deg) brightness(110%) contrast(100%);
+}
+
+.workouts {
+    display: flex;
+    gap: 1rem; 
+    background-color: #3d4245;
+    border-radius: 5px;
+    padding: 1rem;
+    width: fit-content;
+    position: absolute;
+    top: 32rem;
+    right: 10rem;
+}
+
+.workouts:hover {
+    background-color: var(--caloryCard);
+}
+
+.workouts > img {
+    width: 3.7rem;
+}
+
+.workouts > div > :nth-child(1) {
+    color: white;
+    font-size: 1.3rem;
+}
+
+.workouts > div > :nth-child(2) {
+    color: var(--gray);
+}
+
+.dumbbellImage {
+    filter: invert(300%) sepia(120%) saturate(120%) hue-rotate(218deg) brightness(110%) contrast(80%);
+}
+
+.foodsCard {
+    display: flex;
+    gap: 0.5rem; 
+    background-color: #3d4245;
+    border-radius: 5px;
+    padding: 1rem;
+    width: fit-content;
+    position: absolute;
+    top: 32rem;
+    right: 40rem;
+}
+
+.foodsCard:hover{
+    background-color: var(--caloryCard);
+}
+
+.foodsCard > div > :nth-child(1) {
+    color: white;
+    font-size: 1.3rem;
+}
+
+.foodsCard > div > :nth-child(2) {
+    color: var(--gray);
+}
+
+.flameImage {
+    color: rgb(159, 122, 177);
+    width: 3rem;  
+    height: 3rem;
+}   
+
+.dropdown-menu {
+    position: absolute;
+    top: 4.5rem; 
+    right: -20.5rem;
+    background-color: #3d4245;
+    border: 1px solid white;
+    border-radius: 8px;
+    padding: 0.6rem;
+    z-index: 10;
+    width: 7rem;
+}
+
+.dropdown-item {
+    display: block;
+    text-align: center;
+    color: white;
+    text-decoration: none;
+    padding: 0.2rem;
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    color: var(--purple);
+}
+
+.hero-blur {
+    width: 20rem;
+    height: 30rem;
+    left: 0;
+}
+
+.hero-blur-two {
+    width: 30rem;
+    height: 20rem;
+    right: 10rem;
+    top: 20rem;
+}
+
+

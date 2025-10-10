@@ -1,0 +1,112 @@
+.Reasons {
+    display: flex;
+    gap: 1rem;
+    padding: 0 2rem;
+}
+
+.left-t {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    color: white;
+    flex: 1;
+  }
+  
+  .headline-row {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .headline-row span {
+    font-weight: bold;
+    font-size: 3rem;
+    text-transform: uppercase;
+  }
+
+  .left-t>:nth-child(2)
+  {
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+    color: var(--purple);
+    font-style: italic;
+    font-size: 1.25rem;
+    text-transform: uppercase;  
+    letter-spacing: 2px;
+  
+  }
+  
+  .left-t>:nth-child(3) {
+    text-transform: none;
+    text-align: justify;
+    letter-spacing: 2px;
+    line-height: 40px;
+    margin-top: 1rem;
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .right-t {
+    flex: 1;
+    position: relative;
+    min-height: 25rem;
+  }
+
+  .right-t>img{
+    border: 2px solid white;
+    position: absolute;
+    width: 17rem;
+    height: 20rem;
+    object-fit: cover;
+    right: 8rem;
+    top: 2rem;
+  }
+
+  .reasons-footer 
+    {
+    position: absolute;
+    width: 13rem;
+    border: 2px solid white;
+    border-radius: 20;
+    margin-top: 4.25rem;
+    }
+
+  .image-border
+  {
+    position: absolute;
+    width: 17rem; height: 20rem;
+    border: 2px solid var(--purple);
+    background-color: transparent;
+    right: 9rem;
+    top: 0.9rem;
+  }
+
+  .plan-card-border
+  {
+    position: absolute;
+    width: 17rem; 
+    height: 19rem;
+    right: 7rem;
+    border: 2px solid var(--purple);
+    background-color: transparent;
+    top: 4rem;
+  }
+
+  .arrows
+  {
+    display: flex;
+    gap: 1rem;
+    position: absolute;
+    bottom: 2rem;
+    left: 3rem;
+  }
+
+  .arrows>img{
+    width: 2rem;
+    cursor: pointer;
+  }
+
+  .plans-blur-1{
+    width: 32rem;
+    height: 23rem;
+    top: 80rem;
+    left: 50rem;
+  }

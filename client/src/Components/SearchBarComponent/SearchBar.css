@@ -1,0 +1,109 @@
+.input-wrapper {
+  width: 200%;
+  border: none;
+  border-radius: 10px;
+  padding: 5px 15px;
+  box-shadow: 0px 0px 8px #ddd;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  transition: height 0.3s ease;
+  position: relative;
+}
+
+.input-wrapper .search-controls {
+  display: flex;
+  align-items: center;
+  height: 2.5rem;         /* match search bar height */
+  width: 100%;
+  background: transparent;
+}
+
+.input-wrapper input {
+  background-color: transparent;
+  border: none;
+  height: 100%;
+  font-size: 1.1rem;
+  width: 100%;
+  margin-left: 5px;
+  transition: margin 0.3s ease;
+}
+
+.file-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.file-select-btn {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+input:focus {
+  outline: none;
+}
+
+#search-icon {
+  color: rgb(37, 86, 230);
+  cursor: pointer;
+  margin-left: 8px;
+  font-size: 1.5rem;
+}
+
+.search-img-preview {
+  height: 10rem;
+  width: 10rem;
+  border-radius: 6px;
+  margin-top: 8px;      /* <-- add this line for space above the image */
+  margin-bottom: 6px;
+  margin-left: -14rem;
+  object-fit: contain;
+  box-shadow: 0 1px 6px #ccc;
+  align-self: center;
+}
+
+.image-preview-wrapper {
+  position: relative;
+  display: inline-block; /* shrinkwrap image + button */
+  align-self: center;
+  margin-top: 8px;      /* keep existing spacing */
+  margin-bottom: 6px;
+  margin-left: -14rem;
+}
+
+.search-img-preview {
+  height: 10rem;
+  width: 10rem;
+  border-radius: 6px;
+  object-fit: contain;
+  margin-left: 0.5rem;
+  box-shadow: 0 1px 6px #ccc;
+  display: block;
+}
+
+.clear-image-btn {
+  position: absolute;
+  top: 4px;
+  right: -4px;
+  background: rgba(0,0,0,0.5);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-size: 14px;
+  padding: 0;
+}
+
+.clear-image-btn:hover {
+  background: rgba(0,0,0,0.7);
+}

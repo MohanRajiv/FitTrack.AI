@@ -1,0 +1,60 @@
+.Programs {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 0 2rem;
+}
+
+.programs-header {
+    display: flex;
+    gap: 5rem;
+    font-weight: bold;
+    font-size: 3rem;
+    justify-content: center;
+    color: white;
+    text-transform: uppercase;
+    font-style: italic;
+}
+
+.program-categories {
+    display: flex;
+    gap: 1rem;
+}
+
+.category{
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(210.41deg, #651e88 1.14%, #9330c4 100.75%);
+    border: 2px solid white;
+    padding: 1.8rem;
+    gap: 1rem;
+    color: white;
+    justify-content: space-between;
+}
+
+.category>:nth-child(1)
+{
+    width: 2rem;
+    height: 2rem; fill: white;
+}
+
+.category>:nth-child(2)
+{
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.category>:nth-child(3)
+{
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    font-size: 0.75rem;
+    line-height: 22px;
+}
+
+.category:hover{
+    background: var(--planCardReverse);
+}
+

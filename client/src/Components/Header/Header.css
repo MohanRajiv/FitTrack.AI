@@ -1,0 +1,67 @@
+.header {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 13rem;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+.dumbbellLogo {
+    width: 4rem;
+    height: 3rem;
+    filter: invert(200%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(200%) contrast(100%);
+}
+
+.logoText {
+    font-size: 2rem;
+    font-weight: bold;
+    color: white; 
+    font-family: 'Special Gothic Expanded One', sans-serif;
+}
+
+.headerMenu {
+    font-size: 0.9rem;
+    letter-spacing: 1px;    
+    list-style: none;
+    display: flex;
+    gap: 4rem;
+    color: white;
+}
+
+.headerMenu li {
+    font-family: 'Orbitron', sans-serif;
+}
+
+.headerMenu li a {
+    font-family: 'Orbitron', sans-serif; /* or whatever you used before */
+    font-size: 0.9rem;
+    letter-spacing: 1px;    
+    color: white;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+.orbitronFront {
+    font-family: 'Orbitron', sans-serif;
+}
+
+.orbitronFrontTwo {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    display: block;
+    text-align: center;
+}
+
+.headerMenu>li {
+    cursor: pointer;
+}
+
+.headerMenu>li a:hover{
+    color: var(--purple);
+    cursor: pointer;
+}
