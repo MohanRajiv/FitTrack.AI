@@ -26,11 +26,11 @@ console.log("Food API Key loaded:", process.env.USDA_API_KEY ? "Yes" : "No");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const db = mysql.createConnection({
-    host: "127.0.0.1",   
-    port: 3306,  
-    user: "root",         
-    password: "password", 
-    database: "gymdb",     
+    host: process.env.DB_HOST,   
+    port: process.env.DB_PORT,  
+    user: process.env.DB_USER,         
+    password: process.env.DB_PASSWORD, 
+    database: process.env.DB_NAME,
 });
 
 db.connect((err) => {
