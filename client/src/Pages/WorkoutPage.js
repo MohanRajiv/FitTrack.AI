@@ -25,7 +25,7 @@ function WorkoutPage(){
     
             const fetchExercises = async () => {
                 try {
-                    const response = await fetchFromBackend("http://localhost:3001/get-exercises", "POST", {
+                    const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/get-exercises`, "POST", {
                         userID: user.userID,
                         date: workoutDate
                     });
@@ -91,7 +91,7 @@ function WorkoutPage(){
             for (let i = 1; i <= setsCount; i++) {
                 const set = { ...newRow, setNumber: i };
                 try {
-                    const data = await fetchFromBackend("http://localhost:3001/add-set", "POST", {
+                    const data = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/add-set`, "POST", {
                         userId,
                         exercise: tableToUpdate.exercise,
                         weight: set.weight,
@@ -127,7 +127,7 @@ function WorkoutPage(){
             rowToUpdate.sets = updatedRow.sets;
     
             try {
-                await fetchFromBackend("http://localhost:3001/edit-set", "POST", {
+                await fetchFromBackend(`${process.env.REACT_APP_API_URL}/edit-set`, "POST", {
                     userID: userId,
                     id: rowToUpdate.id,
                     weight: updatedRow.weight,
@@ -161,7 +161,7 @@ function WorkoutPage(){
         const rowToDelete = tableToUpdate.rows[rowIdx];
     
         try {
-            await fetchFromBackend("http://localhost:3001/delete-set", "POST", {
+            await fetchFromBackend(`${process.env.REACT_APP_API_URL}/delete-set`, "POST", {
                 userID,
                 id: rowToDelete.id,
                 date: workoutDate, 
@@ -258,7 +258,7 @@ function WorkoutPage(){
                             const user = JSON.parse(localStorage.getItem("user"));
                             const workoutDate = localStorage.getItem("workoutDate");
             
-                            await fetchFromBackend("http://localhost:3001/save-routine", "POST", {
+                            await fetchFromBackend(`${process.env.REACT_APP_API_URL}/save-routine`, "POST", {
                                 userID: user.userID,
                                 date: workoutDate,
                                 exercises: newTables,

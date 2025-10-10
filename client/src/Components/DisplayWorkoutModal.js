@@ -35,7 +35,7 @@ function DisplayWorkoutModal({ closeDisplayWorkoutModel, onSubmit, defaultValue 
             const user = JSON.parse(localStorage.getItem("user"));
             const userId = user.userID;
     
-            const response = await fetchFromBackend("http://localhost:3001/create-table", "POST", {
+            const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/create-table`, "POST", {
                 userId,
                 date: formState.date,
             });
@@ -49,32 +49,6 @@ function DisplayWorkoutModal({ closeDisplayWorkoutModel, onSubmit, defaultValue 
             closeDisplayWorkoutModel();
         } catch (error) {
             console.error("Error creating workout table:", error);
-            setErrors(error.message); // Display the error message from the backend
-        }
-    };
-
-    const handleSubmitTwo = async (e) => {
-        e.preventDefault();
-        if (!validateForm()) return;
-
-        try {
-            const user = JSON.parse(localStorage.getItem("user"));
-            const userId = user.userID;
-    
-            const response = await fetchFromBackend("http://localhost:3001/get-exercises", "POST", {
-                userID: userId,
-                date: formState.date,
-            });
-    
-            if (response.message === "No workout found for this date.") {
-                setErrors(response.message);
-                return;
-            }
-    
-            onSubmit({ date: formState.date });
-            closeDisplayWorkoutModel();
-        } catch (error) {
-            console.error("Error finding workout table:", error);
             setErrors(error.message); // Display the error message from the backend
         }
     };
@@ -135,13 +109,7 @@ function DisplayWorkoutModal({ closeDisplayWorkoutModel, onSubmit, defaultValue 
                         >
                             Create
                         </button>
-                        <button
-                            type="button"
-                            className="btn"
-                            onClick={handleSubmitTwo}
-                        >
-                            Display
-                        </button>
+                        
                     </div>
                     
                 </form>

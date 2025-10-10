@@ -17,7 +17,7 @@ function RoutineModal({ closeRoutineModal, onRoutineSubmit}) {
 
     try {
       const res = await axios.post(
-        "http://localhost:3001/get-gemini-exercise-text",
+        `${process.env.REACT_APP_API_URL}/get-gemini-exercise-text`,
         { message: inputValue }
       );
       const textResponse = res.data.reply;

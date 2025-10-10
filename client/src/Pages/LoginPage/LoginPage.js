@@ -8,25 +8,24 @@ function Login() {
     const navigate = useNavigate()
 
     const handleLogin = () => {
-        fetch("http://localhost:3001/login", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({email, password }),
-          })
-          .then((response) => response.json()) 
-          .then((data) => {
-            if (data.user) { 
-              alert("User logged in successfully");
-              localStorage.setItem("user", JSON.stringify(data.user)); 
-              navigate('/user'); 
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            alert("An error occurred");
-          });
+      fetch(`${process.env.REACT_APP_API_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.user) {
+            alert("User logged in successfully");
+            localStorage.setItem("user", JSON.stringify(data.user));
+            navigate("/user");
+          }
+        })
+        .catch((error) => {
+          console.error("Login error:", error);
+        });
     };
 
     return (

@@ -19,7 +19,7 @@ function FoodDiary() {
     const user = JSON.parse(localStorage.getItem("user"));
     const date = localStorage.getItem("trackerDate");
     try {
-        const response = await fetchFromBackend("http://localhost:3001/get-logs", "POST", {
+        const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/get-logs`, "POST", {
             userID: user.userID,
             date
         });
@@ -53,7 +53,7 @@ function FoodDiary() {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
     try {
-        const response = await fetchFromBackend("http://localhost:3001/get-food-list", "POST", {
+        const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/get-food-list`, "POST", {
             userID: user.userID
         });
         setFoodList(response.foodList || []);
@@ -94,7 +94,7 @@ function FoodDiary() {
     const row = mealTable.rows[rowIdx];
 
     try {
-      await fetchFromBackend("http://localhost:3001/delete-food", "POST", {
+      await fetchFromBackend(`${process.env.REACT_APP_API_URL}/delete-food`, "POST", {
         userID: user.userID,
         id: row.id,    
         date: date
@@ -123,7 +123,7 @@ function FoodDiary() {
       };
 
       try {
-        await fetchFromBackend("http://localhost:3001/add-food", "POST", variables);
+        await fetchFromBackend(`${process.env.REACT_APP_API_URL}/add-food`, "POST", variables);
         await fetchFoods();
       } catch (error) {
         alert("Failed to add food: " + error.message);
@@ -140,7 +140,7 @@ function FoodDiary() {
       };
   
       try {
-        await fetchFromBackend("http://localhost:3001/edit-food", "POST", variables);
+        await fetchFromBackend(`${process.env.REACT_APP_API_URL}/edit-food`, "POST", variables);
         await fetchFoods();
         setRowToEdit(null);
       } catch (error) {
@@ -156,7 +156,7 @@ function FoodDiary() {
   
     try {
       for (const meal of meals) {
-        await fetchFromBackend("http://localhost:3001/add-food", "POST", {
+        await fetchFromBackend(`${process.env.REACT_APP_API_URL}/add-food`, "POST", {
           userId: user.userID,
           meal: meal.section,        
           foodName: meal.food,

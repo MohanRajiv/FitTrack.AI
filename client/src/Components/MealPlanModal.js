@@ -17,7 +17,7 @@ function MealPlanModal({ closeMealPlanModal, onMealPlanSubmit }) {
 
     try {
       const res = await axios.post(
-        "http://localhost:3001/get-gemini-food-text",
+        `${process.env.REACT_APP_API_URL}/get-gemini-food-text`,
         { message: inputValue }
       );
       const textResponse = res.data.reply;

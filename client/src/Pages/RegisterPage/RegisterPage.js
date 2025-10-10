@@ -7,7 +7,7 @@ function Register() {
   const [password, setPassword] = useState("");
 
   const handleRegister = () => {
-    fetch("http://localhost:3001/register", {
+    fetch(`${process.env.REACT_APP_API_URL}/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -61,12 +61,6 @@ function Register() {
             </div>
         </div>
       </div>
-    
-
-      
-
-     
-
     </div>
   );
 }

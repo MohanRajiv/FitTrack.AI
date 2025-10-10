@@ -35,12 +35,12 @@ function FoodDiaryModal({closeFoodDiaryModal, onSubmit, defaultValue}) {
             const user = JSON.parse(localStorage.getItem("user"));
             const userId = user.userID;
     
-            const response = await fetchFromBackend("http://localhost:3001/create-tracker", "POST", { 
+            const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/create-tracker`, "POST", { 
                 userId,
                 date: formState.date,
             });
 
-            const responseTwo = await fetchFromBackend("http://localhost:3001/create-food-list", "POST", { 
+            const responseTwo = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/create-food-list`, "POST", { 
                 userId
             });
     
@@ -53,32 +53,6 @@ function FoodDiaryModal({closeFoodDiaryModal, onSubmit, defaultValue}) {
             closeFoodDiaryModal();
         } catch (error) {
             console.error("Error creating workout table:", error);
-            setErrors(error.message); 
-        }
-    };
-
-    const handleSubmitTwo = async (e) => {
-        e.preventDefault();
-        if (!validateForm()) return;
-
-        try {
-            const user = JSON.parse(localStorage.getItem("user"));
-            const userId = user.userID;
-    
-            const response = await fetchFromBackend("http://localhost:3001/get-logs", "POST", { 
-                userID: userId,
-                date: formState.date,
-            });
-    
-            if (response.message === "No calorie log found for this date.") {
-                setErrors(response.message);
-                return;
-            }
-    
-            onSubmit({ date: formState.date });
-            closeFoodDiaryModal();
-        } catch (error) {
-            console.error("Error find calorie log:", error);
             setErrors(error.message); 
         }
     };
@@ -138,13 +112,6 @@ function FoodDiaryModal({closeFoodDiaryModal, onSubmit, defaultValue}) {
                             onClick={handleSubmitOne}
                         >
                             Create
-                        </button>
-                        <button
-                            type="button"
-                            className="btn"
-                            onClick={handleSubmitTwo}
-                        >
-                            Display
                         </button>
                     </div>
                     

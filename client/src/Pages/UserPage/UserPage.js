@@ -25,7 +25,7 @@ function UserPage() {
 
     const fetchUserLogs = async (userId) => {
         try {
-          const response = await fetch("http://localhost:3001/get-user-logs", {
+          const response = await fetch(`${process.env.REACT_APP_API_URL}/get-user-logs`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userID: userId }),

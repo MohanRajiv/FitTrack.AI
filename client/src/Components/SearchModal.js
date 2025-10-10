@@ -20,7 +20,7 @@ function SearchModal({ closeSearchModal, onSubmit }) {
     const user = JSON.parse(localStorage.getItem("user"));
     onSubmit(newRow);
     try {
-      await fetchFromBackend("http://localhost:3001/add-food-to-list", "POST", {
+      await fetchFromBackend(`${process.env.REACT_APP_API_URL}/add-food-to-list`, "POST", {
         userID: user.userID,
         name: newRow.name,
         protein: newRow.protein,
@@ -64,7 +64,7 @@ function SearchModal({ closeSearchModal, onSubmit }) {
 
     try {
       const res = await axios.post(
-        "http://localhost:3001/get-gemini-text",
+        `${process.env.REACT_APP_API_URL}/get-gemini-text`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
