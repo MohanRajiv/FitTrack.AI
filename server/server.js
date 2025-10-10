@@ -22,6 +22,11 @@ app.use(express.json());
 
 console.log("API Key loaded:", process.env.GEMINI_API_KEY ? "Yes" : "No");
 console.log("Food API Key loaded:", process.env.USDA_API_KEY ? "Yes" : "No");
+console.log("DB Host:", process.env.DB_HOST);
+console.log("DB Port:", process.env.DB_PORT);
+console.log("DB User:", process.env.DB_USER);
+console.log("DB Password:", process.env.DB_PASSWORD);
+console.log("DB Name:", process.env.DB_NAME);
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
