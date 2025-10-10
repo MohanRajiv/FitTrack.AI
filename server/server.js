@@ -41,6 +41,10 @@ db.connect((err) => {
   console.log("Connected to MySQL");
 });
 
+app.get("/health", (_, res) => {
+  res.status(200).json({ message: "OK" });
+});
+
 /*
   Gemini Integration
 */
