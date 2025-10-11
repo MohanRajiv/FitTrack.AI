@@ -18,6 +18,8 @@
 --
 -- Table structure for table `gymUsers`
 --
+CREATE DATABASE IF NOT EXISTS gymdb;
+USE gymdb;
 
 DROP TABLE IF EXISTS `gymUsers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

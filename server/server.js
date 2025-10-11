@@ -22,15 +22,20 @@ app.use(express.json());
 
 console.log("API Key loaded:", process.env.GEMINI_API_KEY ? "Yes" : "No");
 console.log("Food API Key loaded:", process.env.USDA_API_KEY ? "Yes" : "No");
+console.log("DB Host:", process.env.DB_HOST);
+console.log("DB Port:", process.env.DB_PORT);
+console.log("DB User:", process.env.DB_USER);
+console.log("DB Password:", process.env.DB_PASSWORD);
+console.log("DB Name:", process.env.DB_NAME);
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const db = mysql.createConnection({
-    host: "127.0.0.1",   
-    port: 3306,  
-    user: "root",         
-    password: "password", 
-    database: "gymdb",     
+    host: process.env.DB_HOST,   
+    port: process.env.DB_PORT,  
+    user: process.env.DB_USER,         
+    password: process.env.DB_PASSWORD, 
+    database: process.env.DB_NAME,
 });
 
 db.connect((err) => {
@@ -39,6 +44,10 @@ db.connect((err) => {
     return;
   }
   console.log("Connected to MySQL");
+});
+
+app.get("/health", (_, res) => {
+  res.status(200).json({ message: "OK" });
 });
 
 /*

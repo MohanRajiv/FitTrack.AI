@@ -1,0 +1,68 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+      args:
+          REACT_APP_API_URL: ${REACT_APP_API_URL?REQUIRED}
+    container_name: fittrack-nginx
+    ports:
+      - "80:80"
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL?REQUIRED}
+    depends_on:
+      server:
+        condition: service_healthy
+        restart: true
+    restart: unless-stopped
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: fittrack-server
+    ports:
+      - "3001:3001"
+    environment:
+      - DB_HOST=${DB_HOST?REQUIRED}
+      - DB_PORT=${DB_PORT?REQUIRED}
+      - DB_NAME=${DB_NAME?REQUIRED}
+      - DB_USER=${DB_USER?REQUIRED}
+      - DB_PASSWORD=${DB_PASSWORD?REQUIRED}
+      - GEMINI_API_KEY=${GEMINI_API_KEY?REQUIRED}
+      - USDA_API_KEY=${USDA_API_KEY?REQUIRED}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      retries: 5
+      start_period: 5s
+      timeout: 5s
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+
+    restart: unless-stopped
+  
+  db:
+    image: mysql:8.0
+    container_name: fittrack-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD?REQUIRED}
+      - MYSQL_DATABASE=${DB_NAME?REQUIRED}
+      - MYSQL_USER=${DB_USER?REQUIRED}
+      - MYSQL_PASSWORD=${DB_PASSWORD?REQUIRED}
+    ports:
+      - "3306:3306"
+    volumes:
+      - fittrack-db-data:/var/lib/mysql
+      - ./db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      timeout: 20s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  fittrack-db-data:
+
