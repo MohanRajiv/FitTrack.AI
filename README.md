@@ -1,6 +1,6 @@
-# Getting Started with Create React App
+# FitTrack.AI
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+**FitTrack.AI** is a comprehensive fitness and nutrition web application. It uses **Google Gemini 2.0 Flash** to analyze food images for nutrients and generate personalized workout routines. By integrating the **USDA Food Database**, it provides high-accuracy nutritional logging to help users hit their goals.
 
 ## How to run
 
