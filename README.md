@@ -32,7 +32,8 @@ USDA_API_KEY (from USDA FoodData Central)
 ```
 
 2. **Start the Backend**
-  Go to the server directory, you can run:
+
+   Go to the server directory, you can run:
 
 ```bash
 cd server
@@ -44,10 +45,11 @@ node server.js
 ```
 
 4. **Start the Frontend**
-  Once the command successfully runs, type cd .. to go back to the root directory, then type:
+
+    Once the command successfully runs, type cd .. to go back to the root directory, then type:
 
 ```bash
-**cd client**
+cd client
 ```
 
 5. **Finally, to run the app, type**
