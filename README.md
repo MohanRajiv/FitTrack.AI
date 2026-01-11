@@ -23,11 +23,13 @@
 1. **Configure Environment Variables**
 Before running the server, create a .env file in the /server directory with the following:
 
+```bash
 DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
 
 GEMINI_API_KEY (from Google AI Studio)
 
 USDA_API_KEY (from USDA FoodData Central)
+```
 
 2. **Start the Backend**
   Go to the server directory, you can run:
@@ -35,18 +37,24 @@ USDA_API_KEY (from USDA FoodData Central)
 ```bash
 cd server
 ```
-In the server directory, type the following command:
+3. **In the server directory, type the following command**
 
-**node server.js**
+```bash
+node server.js
+```
 
-3. **Start the Frontend**
+4. **Start the Frontend**
   Once the command successfully runs, type cd .. to go back to the root directory, then type:
 
+```bash
 **cd client**
-  Finally, to run the app, type:
+```
 
-**npm start**
-Runs the app in the development mode.
+5. **Finally, to run the app, type**
 
-Open **http://localhost:3000** to view it in your browser.
+```bash
+npm start
+```
+
+6. Open **http://localhost:3000** to view it in your browser.
 
