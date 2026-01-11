@@ -21,7 +21,8 @@
 ## How to run
 
 1. **Configure Environment Variables**
-Before running the server, create a .env file in the /server directory with the following:
+
+   Before running the server, create a .env file in the /server directory with the following:
 
 ```bash
 DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
