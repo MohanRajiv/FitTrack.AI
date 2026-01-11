@@ -18,11 +18,9 @@
 - **AI**: Google Generative AI (Gemini 2.0 Flash)
 - **Data**: USDA FoodData Central API
 
-## Getting Started with Create React App
-This project was bootstrapped with Create React App.
+## How to run
 
-How to run
-1. Configure Environment Variables
+1. **Configure Environment Variables**
 Before running the server, create a .env file in the /server directory with the following:
 
 DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
@@ -31,18 +29,21 @@ GEMINI_API_KEY (from Google AI Studio)
 
 USDA_API_KEY (from USDA FoodData Central)
 
-2. Start the Backend
-Go to the server directory, you can run:
+2. **Start the Backend**
+  Go to the server directory, you can run:
 
-**cd server**
+```bash
+cd server
+```
 In the server directory, type the following command:
 
 **node server.js**
-3. Start the Frontend
-Once the command successfully runs, type cd .. to go back to the root directory, then type:
+
+3. **Start the Frontend**
+  Once the command successfully runs, type cd .. to go back to the root directory, then type:
 
 **cd client**
-Finally, to run the app, type:
+  Finally, to run the app, type:
 
 **npm start**
 Runs the app in the development mode.
