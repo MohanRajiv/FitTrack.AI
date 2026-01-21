@@ -1,7 +1,10 @@
 import React, { useState } from "react";
+import {useUser} from "@clerk/clerk-react";
 import "./Modal.css";
 
 function FoodDiaryModal({closeFoodDiaryModal, onSubmit, defaultValue}) {
+    const { user } = useUser();
+
     const [formState, setFormState] = useState(
         defaultValue || {
             date: ""
@@ -32,8 +35,7 @@ function FoodDiaryModal({closeFoodDiaryModal, onSubmit, defaultValue}) {
         if (!validateForm()) return;
     
         try {
-            const user = JSON.parse(localStorage.getItem("user"));
-            const userId = user.userID;
+            const userId = user.id;
     
             const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/create-tracker`, "POST", { 
                 userId,
@@ -52,7 +54,31 @@ function FoodDiaryModal({closeFoodDiaryModal, onSubmit, defaultValue}) {
             onSubmit({ date: formState.date });
             closeFoodDiaryModal();
         } catch (error) {
-            console.error("Error creating workout table:", error);
+            console.error("Error creating calorie log:", error);
+            setErrors(error.message); 
+        }
+    };
+
+    const handleSubmitTwo = async (e) => {
+        e.preventDefault();
+        if (!validateForm()) return;
+    
+        try {
+            const userId = user.id;
+    
+            const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/delete-tracker`, "POST", { 
+                userID: userId,
+                date: formState.date,
+            });
+
+            if (response.message === "No calorie log already exists for this date.") {
+                setErrors(response.message);
+                return;
+            }
+    
+            closeFoodDiaryModal();
+        } catch (error) {
+            console.error("Error deleting calorie log:", error);
             setErrors(error.message); 
         }
     };
@@ -112,6 +138,13 @@ function FoodDiaryModal({closeFoodDiaryModal, onSubmit, defaultValue}) {
                             onClick={handleSubmitOne}
                         >
                             Create
+                        </button>
+                        <button
+                            type="button"
+                            className="btn"
+                            onClick={handleSubmitTwo}
+                        >
+                            Delete
                         </button>
                     </div>
                     

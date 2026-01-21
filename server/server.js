@@ -1,16 +1,18 @@
-require("dotenv").config();
+import 'dotenv/config';
+import express from "express";
+import mysql from "mysql2";
+import cors from "cors";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from 'url'; 
+import { agent } from "./react-agent/agent.js";
+import { GoogleGenAI } from "@google/genai"; 
 
-const express = require("express");
-const mysql = require("mysql2");
-const cors = require("cors");
-const multer = require("multer");
-const axios = require('axios');
-const stringSimilarity = require('string-similarity');
-const fs = require("fs");
-const path = require("path");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const upload = multer({storage: multer.memoryStorage()});
+const upload = multer({ storage: multer.memoryStorage() });
 
 const exercisesData = JSON.parse(
   fs.readFileSync(path.join(__dirname, "public", "exercises.json"), "utf8")
@@ -28,7 +30,7 @@ console.log("DB User:", process.env.DB_USER);
 console.log("DB Password:", process.env.DB_PASSWORD);
 console.log("DB Name:", process.env.DB_NAME);
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenAI({apiKey: process.env.GEMINI_API_KEY});
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,   
@@ -53,7 +55,7 @@ app.get("/health", (_, res) => {
 /*
   Gemini Integration
 */
-app.post("/get-gemini-text", upload.single("image"), async (req, res) => {
+app.post("/get-agent-text", upload.single("image"), async (req, res) => {
   try {
     const userInput = req.body.message;
     const imageFile = req.file;
@@ -63,59 +65,49 @@ app.post("/get-gemini-text", upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "No input provided" });
     }
 
-    // === Always call Gemini (for both text-only and image cases) ===
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const parts = [];
-
-    const promptText = `You are a nutrition expert. Analyze the food given in 
-    the image or text and provide information in the following
-    strict format: Name:{}, Protein:{}, Fats:{}, Carbs:{}, Calories:{}. 
-    Don't include the grams unit. No extra text.`;
-
-    if (userInput) {
-      parts.push({ text: `${promptText}\nInput: ${userInput}` });
-    } else {
-      parts.push({ text: promptText });
-    }
+    const content = [];
+    
+    content.push({ 
+      type: "text", 
+      text: `Identify this food and use the get_nutrition_data tool to find the top ${pageSize} results by setting the 'count' parameter to ${pageSize}. User query: ${userInput || "Analyze this image."}` 
+    });
 
     if (imageFile) {
-      parts.push({
-        inlineData: {
-          mimeType: imageFile.mimetype,
-          data: imageFile.buffer.toString("base64"),
-        },
+      content.push({
+        type: "image_url",
+        image_url: `data:${imageFile.mimetype};base64,${imageFile.buffer.toString("base64")}`,
       });
     }
 
-    // === Call Gemini ===
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts }],
+    const agentResult = await agent.invoke({
+      messages: [
+        { 
+          role: "user", 
+          content: content 
+        }
+      ],
     });
 
-    const response = await result.response.text();
-    console.log("=== Gemini Response ===");
-    console.log(response);
+    const lastMessage = agentResult.messages[agentResult.messages.length - 1];
+    
+    console.log("Raw Last Message Content:", lastMessage.content);
 
-    // === Extract food name from Gemini response ===
-    const nameMatch = response.match(/Name:\s*(.*?)(,|$)/i);
-    const foodName = nameMatch ? nameMatch[1].trim() : null;
-    console.log("=== Gemini Food Name ===", foodName);
-
-    // === Always call USDA lookup with Gemini food name (if found) ===
-    let usdaNutrition = [];
-    if (foodName) {
-      usdaNutrition = await getNutritionFromUSDA(foodName, pageSize);
+    let finalReply = "";
+    if (typeof lastMessage.content === "string") {
+      finalReply = lastMessage.content;
+    } else if (Array.isArray(lastMessage.content)) {
+      const textPart = lastMessage.content.find(part => part.type === "text");
+      finalReply = textPart ? textPart.text : "No text response generated.";
     }
 
     res.status(200).json({
-      reply: response,   // Gemini’s raw formatted output (for display)
-      usda: usdaNutrition, // USDA array results (for actual nutrition data)
+      reply: finalReply || "The agent processed the data but returned an empty response.",
     });
 
   } catch (error) {
-    console.error("Gemini error:", error);
+    console.error("Route Error:", error);
     res.status(500).json({
-      error: "Failed to fetch from Gemini/USDA",
+      error: "Failed to process request",
       details: error.message,
     });
   }
@@ -128,11 +120,9 @@ app.post("/get-gemini-exercise-text", async (req, res) => {
       return res.status(400).json({ error: "No input provided" });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-    // Only send the *names* to Gemini, otherwise the prompt gets too large
     const exerciseNames = exercisesData.map((e) => e.name);
 
+    const parts = [];
     const promptText = `
       You are an exercise routine expert. The user says: "${userInput}".
       You must ONLY use exercises from this list: ${exerciseNames.join(", ")}.
@@ -143,8 +133,14 @@ app.post("/get-gemini-exercise-text", async (req, res) => {
       - Do not include any explanations or extra text, just the routine.
     `;
 
-    const response = await model.generateContent(promptText);
-    const output = await response.response.text();
+    parts.push({ text: userInput ? `${promptText}\nInput: ${userInput}` : promptText });
+
+    const response = await genAI.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ role: 'user', parts: parts }],
+    });    
+
+    const output = response.text;
 
     res.status(200).json({ reply: output });
   } catch (error) {
@@ -191,40 +187,47 @@ app.post("/get-gemini-food-text", async (req, res) => {
     });
   }
 });
+
 /*
   Login and Register Integration
 */
-app.post("/register", (req, res) => {
-  const { name, email, password } = req.body;
-  
-  const query = "INSERT INTO gymUsers (name, email, password) VALUES (?, ?, ?)";
-  db.query(query, [name, email, password], (err, result) => {
-    if (err) {
-      console.error("Error inserting data:", err);
-      res.status(500).send("Error registering user");
-      return;
-    }
-    res.status(200).send("User registered successfully");
-  });
-});
+app.post("/sync-user", (req, res) => {
+  const { userID, email, name } = req.body;
 
-app.post("/login", (req, res) => {
-  const { email, password } = req.body;
-  console.log("Login request received:", email, password);
-    
-  const query = "SELECT * FROM gymUsers WHERE email = ? AND password = ?";
-  db.query(query, [email, password], (err, result) => {
+  if (!userID || !email) {
+    return res.status(400).send("Missing required fields");
+  }
+
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS gymUsers (
+      userID VARCHAR(255) PRIMARY KEY,
+      email VARCHAR(50),
+      name VARCHAR(50)
+    )
+  `;
+
+  db.query(createTableQuery, (err) => {
     if (err) {
-      console.error("Database query error:", err);
-      res.status(500).send("Error logging in");
-      return;
+      console.error("Error creating table:", err);
+      return res.status(500).send("DB error");
     }
-    console.log("Query result:", result);
-    if (result.length > 0) {
-      res.status(200).json({user: result[0]});
-    } else {
-      res.status(401).send("Invalid email or password");
-    }
+
+    const insertQuery = `
+      INSERT INTO gymUsers (userID, email, name)
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        email = VALUES(email),
+        name = VALUES(name)
+    `;
+
+    db.query(insertQuery, [userID, email, name], (err) => {
+      if (err) {
+        console.error("Error syncing user:", err);
+        return res.status(500).send("DB error");
+      }
+
+      return res.sendStatus(200);
+    });
   });
 });
 
@@ -276,18 +279,56 @@ app.post("/create-table", (req, res) => {
   });
 });
 
+app.post("/delete-workout-table", (req, res) => {
+  const { userID, date } = req.body;
+
+  if (!userID || !date) {
+    console.error("Missing userId or date in request body:", req.body);
+    res.status(400).send("Missing userId or date in request body.");
+    return;
+  }
+
+  const sanitizedDate = date.replace(/-/g, '_');
+  const tableName = `user_${userID}_exercises_${sanitizedDate}`;
+
+  const checkTableQuery = `SHOW TABLES LIKE '${tableName}'`;
+  db.query(checkTableQuery, (err, result) => {
+    if (err) {
+      console.error("Error checking table existence:", err);
+      res.status(500).send("Error checking table existence.");
+      return;
+    }
+
+    if (result.length == 0) {
+      res.status(409).json({ message: "No workout already exists for this date." });
+      return;
+    }
+
+    const dropTableQuery = `DROP TABLE \`${tableName}\``;
+
+    db.query(dropTableQuery, (err) => {
+      if (err) {
+        console.error("Error deleting table:", err);
+        res.status(500).send("Error deleting exercise table.");
+        return;
+      }
+      res.status(200).send("Exercise table deleting successfully.");
+    });
+  });
+});
+
 app.post("/add-set", (req, res) => {
-  const { userId, exercise, weight, reps, setNumber, date } = req.body;
+  const { userID, exercise, weight, reps, setNumber, date } = req.body;
   console.log("Received data:", req.body);
 
-  if (!userId || !exercise || !weight || !reps || !setNumber || !date) {
+  if (!userID || !exercise || !weight || !reps || !setNumber || !date) {
       console.error("Missing required fields:", req.body);
       res.status(400).send("Missing required fields.");
       return;
   }
 
   const sanitizedDate = date.replace(/-/g, '_');
-  const tableName = `user_${userId}_exercises_${sanitizedDate}`;
+  const tableName = `user_${userID}_exercises_${sanitizedDate}`;
 
   const query = `
       INSERT INTO \`${tableName}\` (exercise, weight, reps, date)
@@ -483,6 +524,44 @@ app.post("/delete-set", (req, res) => {
     });
   });
 
+  app.post("/delete-tracker", (req, res) => {
+    const { userID, date } = req.body;
+  
+    if (!userID || !date) {
+      console.error("Missing userId or date in request body:", req.body);
+      res.status(400).send("Missing userId or date in request body.");
+      return;
+    }
+  
+    const sanitizedDate = date.replace(/-/g, '_');
+    const tableName = `user_${userID}_calorieLog_${sanitizedDate}`;
+  
+    const checkTableQuery = `SHOW TABLES LIKE '${tableName}'`;
+    db.query(checkTableQuery, (err, result) => {
+      if (err) {
+        console.error("Error checking table existence:", err);
+        res.status(500).send("Error checking table existence.");
+        return;
+      }
+  
+      if (result.length == 0) {
+        res.status(409).json({ message: "No calorie log already exists for this date." });
+        return;
+      }
+  
+      const dropTableQuery = `DROP TABLE \`${tableName}\``;
+  
+      db.query(dropTableQuery, (err) => {
+        if (err) {
+          console.error("Error deleting calorie log:", err);
+          res.status(500).send("Error deleting calorie log.");
+          return;
+        }
+        res.status(200).send("Calorie Log deleting successfully.");
+      });
+    });
+  });
+
   app.post("/add-food", (req, res) => {
     const {userId, meal, foodName, protein, fats, carbs, calories, date} = req.body;
     console.log("Received data:", req.body);
@@ -584,9 +663,6 @@ app.post("/delete-set", (req, res) => {
       }
   
       if (result.length > 0) {
-        res
-          .status(409)
-          .json({ message: "A food list already exists for this user." });
         return;
       }
   
@@ -732,7 +808,6 @@ app.post("/delete-set", (req, res) => {
       AND table_name LIKE '${foodTablePattern}'
     `;
   
-    // 1️⃣ Get workout tables
     db.query(workoutQuery, (err, workoutResults) => {
       if (err) {
         console.error("Error fetching workout tables:", err);
@@ -747,15 +822,18 @@ app.post("/delete-set", (req, res) => {
         .map(row => {
           const tableName = row.table_name || row.TABLE_NAME;
           const parts = tableName.split("_");
-  
-          if (parts.length < 6) {
-            console.warn("Unexpected workout table name:", tableName);
-            return null;
+
+          if (parts.length >= 3) {
+            const day = parts.pop();
+            const month = parts.pop();
+            const year = parts.pop();
+            return `${year}-${month}-${day}`;
           }
-  
-          return `${parts[3]}-${parts[4]}-${parts[5]}`;
+    
+          console.warn("Unexpected table name format:", tableName);
+          return null;
         })
-        .filter(Boolean);
+      .filter(Boolean);
   
       // 2️⃣ Get food tables
       db.query(foodQuery, (err, foodResults) => {
@@ -766,21 +844,24 @@ app.post("/delete-set", (req, res) => {
         }
   
         console.log("Food tables:", foodResults);
-  
+
         const foodDates = foodResults
-          .filter(row => row.table_name || row.TABLE_NAME)
-          .map(row => {
-            const tableName = row.table_name || row.TABLE_NAME;
-            const parts = tableName.split("_");
-  
-            if (parts.length < 6) {
-              console.warn("Unexpected food table name:", tableName);
-              return null;
-            }
-  
-            return `${parts[3]}-${parts[4]}-${parts[5]}`;
-          })
-          .filter(Boolean);
+        .filter(row => row.table_name || row.TABLE_NAME)
+        .map(row => {
+          const tableName = row.table_name || row.TABLE_NAME;
+          const parts = tableName.split("_");
+
+          if (parts.length >= 3) {
+            const day = parts.pop();
+            const month = parts.pop();
+            const year = parts.pop();
+            return `${year}-${month}-${day}`;
+          }
+    
+          console.warn("Unexpected food table name:", tableName);
+          return null;
+        })
+        .filter(Boolean);
   
         console.log("✅ Workout Dates:", workoutDates);
         console.log("✅ Food Dates:", foodDates);
@@ -792,79 +873,6 @@ app.post("/delete-set", (req, res) => {
       });
     });
   });  
-
-  async function getNutritionFromUSDA(approximateName, pageSize = 1) {
-    try {
-      // Step 1: Search foods
-      const searchRes = await axios.get(
-        "https://api.nal.usda.gov/fdc/v1/foods/search",
-        {
-          params: {
-            api_key: process.env.USDA_API_KEY,
-            query: approximateName,
-            pageSize,
-            dataType: "Branded,Foundation,Survey (FNDDS),SR Legacy",
-            sortBy: "dataType.keyword",
-            sortOrder: "asc",
-            requireAllWords: false,
-          },
-        }
-      );
-  
-      const foods = searchRes.data.foods || [];
-  
-      // Step 2: Fetch details for branded foods and normalize
-      const detailedFoods = await Promise.all(
-        foods.map(async (food) => {
-          let details = food;
-  
-          // If branded → fetch full details for labelNutrients
-          if (food.dataType === "Branded") {
-            try {
-              const detailRes = await axios.get(
-                `https://api.nal.usda.gov/fdc/v1/food/${food.fdcId}`,
-                { params: { api_key: process.env.USDA_API_KEY } }
-              );
-              details = detailRes.data;
-            } catch (err) {
-              console.error(`Error fetching details for fdcId ${food.fdcId}:`, err.message);
-            }
-          }
-  
-          // Step 3: Extract nutrients consistently
-          const label = details.labelNutrients;
-  
-          // fallback helper for non-branded foods
-          const getNutrient = (name) => {
-            const nutrient = details.foodNutrients?.find((n) =>
-              n.nutrientName?.toLowerCase().includes(name.toLowerCase())
-            );
-            return nutrient ? nutrient.value : null;
-          };
-  
-          const calories = label?.calories?.value ?? getNutrient("energy");
-          const protein = label?.protein?.value ?? getNutrient("protein");
-          const fat = label?.fat?.value ?? getNutrient("total lipid");
-          const carbs = label?.carbohydrates?.value ?? getNutrient("carbohydrate");
-  
-          return {
-            fdcId: details.fdcId,
-            name: details.description + (details.brandName ? ` - ${details.brandName}` : ""),
-            calories: calories ?? "N/A",
-            protein: protein ?? "N/A",
-            fats: fat ?? "N/A",
-            carbs: carbs ?? "N/A",
-          };
-        })
-      );
-  
-      return detailedFoods;
-    } catch (err) {
-      console.error("USDA Matching Error:", err.response?.data || err.message);
-      return [];
-    }
-  }
-  
 
   const PORT = 3001;
   app.listen(PORT, () => {

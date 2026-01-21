@@ -4,6 +4,8 @@ import SelectFood from "../Components/FoodModal";
 import CalorieTable from "../Components/TableComponents/CalorieTable";
 import SearchModal from "../Components/SearchModal";
 import MealPlanModal from "../Components/MealPlanModal";
+import {useUser, UserButton} from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 
 function FoodDiary() {
   const [foodTables, setFoodTables] = useState([]);
@@ -14,13 +16,14 @@ function FoodDiary() {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [mealPlanModalOpen, setMealPlanModalOpen] = useState(false);
   const [rowToEdit, setRowToEdit] = useState(null);
+  const { user } = useUser();
+  const navigate = useNavigate();
 
   const fetchFoods = async () => {
-    const user = JSON.parse(localStorage.getItem("user"));
     const date = localStorage.getItem("trackerDate");
     try {
         const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/get-logs`, "POST", {
-            userID: user.userID,
+            userID: user.id,
             date
         });
   
@@ -50,11 +53,10 @@ function FoodDiary() {
   }
 
   const fetchFoodList = async () => {
-    const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
     try {
         const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/get-food-list`, "POST", {
-            userID: user.userID
+            userID: user.id
         });
         setFoodList(response.foodList || []);
         console.log("Fetched food list:", response.foodList);
@@ -64,16 +66,21 @@ function FoodDiary() {
   };
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
     const date = localStorage.getItem("trackerDate");
 
+    if (!date) {
+      console.warn("No date selected, redirecting to user page.");
+      navigate("/user");
+      return;
+    }
+
     if (user) {
-      setUserName(user.name);
+      setUserName(user.fullName);
       setDate(date); 
       fetchFoods();
       fetchFoodList();
     }
-  }, []);
+  }, [user, navigate]);
 
   const handleEditRow = (meal, rowIdx) => {
     const mealTable = foodTables.find(t => t.meal === meal);
@@ -87,7 +94,6 @@ function FoodDiary() {
   };
 
   const handleDeleteRow = async (meal, rowIdx) => {
-    const user = JSON.parse(localStorage.getItem("user"));
     const date = localStorage.getItem("trackerDate");
 
     const mealTable = foodTables.find(t => t.meal === meal);
@@ -95,7 +101,7 @@ function FoodDiary() {
 
     try {
       await fetchFromBackend(`${process.env.REACT_APP_API_URL}/delete-food`, "POST", {
-        userID: user.userID,
+        userID: user.id,
         id: row.id,    
         date: date
       });
@@ -106,13 +112,11 @@ function FoodDiary() {
   };
 
   const handleSubmit = async (newRow) => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const userId = user.userID;
     const date = localStorage.getItem("trackerDate");
 
     if (rowToEdit === null) {
       const variables = {
-        userId: userId,
+        userId: user.id,
         meal: newRow.meal,           
         foodName: newRow.name,  
         protein: newRow.protein,
@@ -130,7 +134,7 @@ function FoodDiary() {
       }
     } else {
       const variables = {
-        userID: userId,
+        userID: user.id,
         id: rowToEdit.id,
         protein: newRow.protein,
         fats: newRow.fats,
@@ -150,14 +154,13 @@ function FoodDiary() {
   };
 
   const handleMealPlanSubmit = async (meals) => {
-    const user = JSON.parse(localStorage.getItem("user"));
     const date = localStorage.getItem("trackerDate");
     if (!user || !date) return;
   
     try {
       for (const meal of meals) {
         await fetchFromBackend(`${process.env.REACT_APP_API_URL}/add-food`, "POST", {
-          userId: user.userID,
+          userId: user.id,
           meal: meal.section,        
           foodName: meal.food,
           calories: meal.calories,
@@ -220,6 +223,16 @@ function FoodDiary() {
   return (
     <div>
       <h1>{userName}'s Calorie Tracker for {date}</h1>
+      <UserButton
+        appearance={{
+          elements: {
+            avatarBox: {
+              width: "40px",
+              height: "40px",
+            },
+          },
+        }}
+      />
       <h2>Calories: {updateAmounts(foodTables).totalCalories.toFixed(1)}</h2>
       <h3>Protein: {updateAmounts(foodTables).totalProtein.toFixed(1)}g</h3>
       <h3>Carbs: {updateAmounts(foodTables).totalCarbs.toFixed(1)}g</h3>
@@ -231,10 +244,6 @@ function FoodDiary() {
       
       <button className="btn" onClick={() => setFoodModalOpen(true)}>
         Add Food
-      </button>
-
-      <button className="btn" onClick={() => setMealPlanModalOpen(true)}>
-        Meal Plan Generator
       </button>
 
       {foodTables.some(row => row.meal === "Breakfast") && (

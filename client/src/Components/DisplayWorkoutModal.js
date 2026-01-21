@@ -1,7 +1,10 @@
 import React, { useState } from "react";
+import {useUser} from "@clerk/clerk-react";
 import "./Modal.css";
 
 function DisplayWorkoutModal({ closeDisplayWorkoutModel, onSubmit, defaultValue }) {
+    const { user } = useUser();
+
     const [formState, setFormState] = useState(
         defaultValue || {
             date: ""
@@ -32,8 +35,7 @@ function DisplayWorkoutModal({ closeDisplayWorkoutModel, onSubmit, defaultValue 
         if (!validateForm()) return;
     
         try {
-            const user = JSON.parse(localStorage.getItem("user"));
-            const userId = user.userID;
+            const userId = user.id;
     
             const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/create-table`, "POST", {
                 userId,
@@ -49,6 +51,30 @@ function DisplayWorkoutModal({ closeDisplayWorkoutModel, onSubmit, defaultValue 
             closeDisplayWorkoutModel();
         } catch (error) {
             console.error("Error creating workout table:", error);
+            setErrors(error.message); // Display the error message from the backend
+        }
+    };
+
+    const handleSubmitTwo = async (e) => {
+        e.preventDefault();
+        if (!validateForm()) return;
+    
+        try {
+            const userId = user.id;
+    
+            const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/delete-workout-table`, "POST", {
+                userID: userId,
+                date: formState.date,
+            });
+    
+            if (response.message === "No workout already exists for this date.") {
+                setErrors(response.message);
+                return;
+            }
+    
+            closeDisplayWorkoutModel();
+        } catch (error) {
+            console.error("Error deleting workout table:", error);
             setErrors(error.message); // Display the error message from the backend
         }
     };
@@ -108,6 +134,13 @@ function DisplayWorkoutModal({ closeDisplayWorkoutModel, onSubmit, defaultValue 
                             onClick={handleSubmitOne}
                         >
                             Create
+                        </button>
+                        <button
+                            type="button"
+                            className="btn"
+                            onClick={handleSubmitTwo}
+                        >
+                            Delete
                         </button>
                         
                     </div>

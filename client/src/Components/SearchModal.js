@@ -3,25 +3,25 @@ import "./Modal.css";
 import { SearchBar } from "./SearchBarComponent/SearchBar";
 import axios from "axios";
 import SelectFood from "./FoodModal";
+import { useUser} from "@clerk/clerk-react";
 
 function SearchModal({ closeSearchModal, onSubmit }) {
   const [errors, setErrors] = useState(null);
   const [searchInput, setSearchInput] = useState("");
-  const [searchResponse, setSearchResponse] = useState("");
+  const [agentResponse, setAgentResponse] = useState(""); // New state for Agent
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [foodModalOpen, setFoodModalOpen] = useState(false);
   const [rowToEdit, setRowToEdit] = useState(null);
-  const [extractedText, setExtractedText] = useState([]);
   const [usdaResponse, setUsdaResponse] = useState([]);
   const [pageSize, setPageSize] = useState(1);
+  const { user } = useUser();
 
   const handleSubmit = async (newRow) => {
-    const user = JSON.parse(localStorage.getItem("user"));
     onSubmit(newRow);
     try {
       await fetchFromBackend(`${process.env.REACT_APP_API_URL}/add-food-to-list`, "POST", {
-        userID: user.userID,
+        userID: user.id,
         name: newRow.name,
         protein: newRow.protein,
         fats: newRow.fats,
@@ -51,11 +51,9 @@ function SearchModal({ closeSearchModal, onSubmit }) {
     }
   };
 
-  const handleSearchClick = async (inputValue) => {
-    setSearchInput(inputValue);
-
+  const handleAgentSearchClick = async () => {
     const formData = new FormData();
-    formData.append("message", inputValue);
+    formData.append("message", searchInput);
     formData.append("pageSize", pageSize);
 
     if (selectedImage) {
@@ -63,21 +61,43 @@ function SearchModal({ closeSearchModal, onSubmit }) {
     }
 
     try {
+      setAgentResponse("Agent is thinking...");
+      setUsdaResponse([]); 
+      
       const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/get-gemini-text`,
+        `${process.env.REACT_APP_API_URL}/get-agent-text`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      setSearchResponse(res.data.reply);
-      setUsdaResponse(res.data.usda || []);
+      const reply = res.data.reply;
+      setAgentResponse(reply);
 
-      const colonSplit = res.data.reply.split(":");
-      const commaSplit = colonSplit.flatMap((part) => part.split(","));
-      setExtractedText(commaSplit.map((str) => str.trim()));
+      const foodLines = reply.split('\n').filter(line => line.trim() !== "");
+
+      const parsedFoods = foodLines.map(line => {
+        const name = line.match(/Name:(.*?),/i)?.[1]?.trim();
+        const protein = line.match(/Protein:(.*?),/i)?.[1]?.trim();
+        const fats = line.match(/Fats:(.*?),/i)?.[1]?.trim();
+        const carbs = line.match(/Carbs:(.*?),/i)?.[1]?.trim();
+        const calories = line.match(/Calories:(.*?)$|Calories:(.*?),/i);
+        
+        const calValue = (calories?.[1] || calories?.[2])?.replace(/\./g, "").trim();
+
+        return {
+          name: name || "Unknown Food",
+          protein: protein || "0",
+          fats: fats || "0",
+          carbs: carbs || "0",
+          calories: calValue || "0"
+        };
+      });
+
+      setUsdaResponse(parsedFoods);
+      
     } catch (err) {
-      console.error("Error calling Gemini API:", err);
-      setSearchResponse("Error fetching Gemini response.");
+      console.error("Error calling Agent API:", err);
+      setAgentResponse("Error fetching Agent response.");
     }
   };
 
@@ -130,41 +150,21 @@ function SearchModal({ closeSearchModal, onSubmit }) {
         <div className="search-bar-container">
           <SearchBar
             onInputChange={handleInputChange}
-            onSearchClick={handleSearchClick}
             onFileChange={handleImageChange}
             accept="image/*"
             imagePreview={imagePreview}
             onClearImage={handleClearImage}
             showComponents={true}
           />
+
+          <button 
+            className="btn" 
+            onClick={handleAgentSearchClick}
+          >
+            Test Agent Analysis
+          </button>
         </div>
 
-        {/* === Gemini Results === */}
-        {searchResponse && (
-          <div style={{ marginBottom: "15px" }}>
-            <p>
-              <strong>Gemini Analysis:</strong>
-            </p>
-            <div
-              className="search-message"
-              onClick={() => {
-                setRowToEdit({
-                  name: extractedText[1] || "",
-                  protein: extractedText[3] || "",
-                  fats: extractedText[5] || "",
-                  carbs: extractedText[7] || "",
-                  calories: extractedText[9] || "",
-                  meal: "",
-                });
-                setFoodModalOpen(true);
-              }}
-            >
-              {searchResponse}
-            </div>
-          </div>
-        )}
-
-        {/* === USDA Results === */}
         {usdaResponse.length > 0 && (
           <div>
             <p>

@@ -4,10 +4,22 @@
 }
 
 .left-h {
+    position: relative;
     padding: 1rem;
     padding-top: 1rem;
     flex: 0.62;
     display: flex;
     gap: 2rem;
     flex-direction: column;
+}
+
+.right-h {
+    flex: 1;
+    position: relative;
+    background-color: transparent; 
+    width: 0;
+    height: 0;
+    border-top: 0px solid transparent;
+    border-bottom: 685px solid transparent;
+    border-right: 400px solid rgb(102, 33, 142); 
 }

@@ -4,6 +4,8 @@ import Table from "../Components/TableComponents/Table";
 import Modal from "../Components/Modal";
 import SelectExercise from "../Components/ExerciseModal";
 import RoutineModal from "../Components/RoutineModal";
+import {useUser, UserButton} from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 
 function WorkoutPage(){
     const [modelOpen, setModelOpen] = useState(false);
@@ -14,20 +16,28 @@ function WorkoutPage(){
     const [rowToEdit, setRowToEdit] = useState(null);
     const [currentTableIdx, setCurrentTableIdx] = useState(null);
     const [workoutDate, setWorkoutDate] = useState(null);
+    const { user } = useUser();
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem("user"));
-        const workoutDate = localStorage.getItem("workoutDate");
+        const storedDate = localStorage.getItem("workoutDate");
+
+        if (!storedDate) {
+            console.warn("No date selected, redirecting to user page.");
+            navigate("/user");
+            return;
+        }
+    
+        setWorkoutDate(storedDate);
 
         if (user) {
-            setUserName(user.name);
-            setWorkoutDate(workoutDate);
+            setUserName(user.fullName);
     
             const fetchExercises = async () => {
                 try {
                     const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/get-exercises`, "POST", {
-                        userID: user.userID,
-                        date: workoutDate
+                        userID: user.id,
+                        date: storedDate
                     });
     
                     if (response.exercises && response.exercises.length > 0) {
@@ -50,10 +60,9 @@ function WorkoutPage(){
                     console.error("Error fetching exercises:", error);
                 }
             };
-    
             fetchExercises();
         }
-    }, []);
+    }, [user, navigate]);
 
     const handleAddExercise = async (exercise) => {
         if (!exercise) {
@@ -76,9 +85,7 @@ function WorkoutPage(){
     };
 
     const handleAddSet = async (newRow) => {
-        console.log("newRow in handleAddSet:", newRow); // Debugging line
-        const user = JSON.parse(localStorage.getItem("user"));
-        const userId = user.userID;
+        console.log("newRow in handleAddSet:", newRow); 
         const workoutDate = localStorage.getItem("workoutDate");
     
         if (currentTableIdx !== null) {
@@ -92,7 +99,7 @@ function WorkoutPage(){
                 const set = { ...newRow, setNumber: i };
                 try {
                     const data = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/add-set`, "POST", {
-                        userId,
+                        userID: user.id,
                         exercise: tableToUpdate.exercise,
                         weight: set.weight,
                         reps: set.reps,
@@ -113,8 +120,6 @@ function WorkoutPage(){
     };
 
     const handleEditSet = async (updatedRow) => {
-        const user = JSON.parse(localStorage.getItem("user"));
-        const userId = user.userID;
         const workoutDate = localStorage.getItem("workoutDate");
     
         if (currentTableIdx !== null) {
@@ -128,7 +133,7 @@ function WorkoutPage(){
     
             try {
                 await fetchFromBackend(`${process.env.REACT_APP_API_URL}/edit-set`, "POST", {
-                    userID: userId,
+                    userID: user.id,
                     id: rowToUpdate.id,
                     weight: updatedRow.weight,
                     reps: updatedRow.reps,
@@ -152,17 +157,14 @@ function WorkoutPage(){
     };
 
     const handleDeleteRow = async (tableIdx, rowIdx) => {
-        const user = JSON.parse(localStorage.getItem("user"));
-        const userID = user.userID;
         const workoutDate = localStorage.getItem("workoutDate");
-    
         const updatedTables = [...exerciseTables];
         const tableToUpdate = updatedTables[tableIdx];
         const rowToDelete = tableToUpdate.rows[rowIdx];
     
         try {
             await fetchFromBackend(`${process.env.REACT_APP_API_URL}/delete-set`, "POST", {
-                userID,
+                userID: user.id,
                 id: rowToDelete.id,
                 date: workoutDate, 
             });
@@ -204,6 +206,16 @@ function WorkoutPage(){
     return (
         <div>
             <h1>{userName}'s Workout for {workoutDate}</h1>
+            <UserButton
+                appearance={{
+                    elements: {
+                        avatarBox: {
+                            width: "40px",
+                            height: "40px",
+                        },
+                    },
+                }}
+            />
 
             <button className="btn" onClick={() =>setRoutineModalOpen(true)}>
                 Routine Recommender 
@@ -255,11 +267,10 @@ function WorkoutPage(){
                         }));
             
                         try {
-                            const user = JSON.parse(localStorage.getItem("user"));
                             const workoutDate = localStorage.getItem("workoutDate");
             
                             await fetchFromBackend(`${process.env.REACT_APP_API_URL}/save-routine`, "POST", {
-                                userID: user.userID,
+                                userID: user.id,
                                 date: workoutDate,
                                 exercises: newTables,
                             });

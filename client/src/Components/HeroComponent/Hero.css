@@ -4,6 +4,7 @@
 }
 
 .left-h {
+    position: relative;
     padding: 1rem;
     padding-top: 1rem;
     flex: 0.62;
@@ -93,29 +94,6 @@
     color: white;
     margin-top: -0.5rem;
     margin-left: 10rem;
-}
-
-.btn-two {
-    position: absolute;
-    padding: 0.7rem;
-    right: -20rem;
-    top: 1.5rem;
-    width: 7rem;
-    gap: 1rem;
-    font-weight: normal;
-    background-color: transparent;
-    border: 2px solid white;
-    color: white;
-    font-family: 'Orbitron', sans-serif; 
-    letter-spacing: 1px;
-    background-color: #3d4245;
-    border-radius: 10px;
-}
-
-.btn-two:hover {
-    cursor: pointer;
-    background-color: #35383a;
-    color: var(--purple);
 }
 
 .hero-image {
@@ -275,6 +253,35 @@
     height: 20rem;
     right: 10rem;
     top: 20rem;
+}
+
+.btn-two {
+    position: absolute;
+    padding: 0.7rem;
+    right: -20rem;
+    top: 1.5rem;
+    width: 7rem;
+    gap: 1rem;
+    font-weight: normal;
+    background-color: transparent;
+    border: 2px solid white;
+    color: white;
+    font-family: 'Orbitron', sans-serif; 
+    letter-spacing: 1px;
+    background-color: #3d4245;
+    border-radius: 10px;
+}
+
+.avatar-position {
+    position: absolute;
+    padding: 1rem;
+    right: -20rem;
+}
+
+.btn-two:hover {
+    cursor: pointer;
+    background-color: #35383a;
+    color: var(--purple);
 }
 
 

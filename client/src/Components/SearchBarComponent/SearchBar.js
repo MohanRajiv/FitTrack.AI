@@ -1,25 +1,20 @@
 import { useState } from "react";
-import { FaSearch, FaCamera, FaTimes } from "react-icons/fa"; // import FaTimes
+import { FaCamera, FaTimes } from "react-icons/fa"; // import FaTimes
 import "./SearchBar.css";
 
 export const SearchBar = ({
   showComponents,
   onInputChange,
-  onSearchClick,
   onFileChange,
   accept,
   imagePreview,
-  onClearImage // new prop
+  onClearImage 
 }) => {
   const [input, setInput] = useState("");
 
   const handleChange = (value) => {
     setInput(value);
     onInputChange(value);
-  };
-
-  const handleSearchClick = () => {
-    onSearchClick(input);
   };
 
   return (
@@ -61,7 +56,6 @@ export const SearchBar = ({
           </label>
         )}
         
-        <FaSearch id="search-icon" onClick={handleSearchClick} />
       </div>
     </div>
   );

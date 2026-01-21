@@ -6,9 +6,9 @@ import HeroImageBack from '../../assets/hero_image_back.png'
 import Calories from '../../assets/calories.png'
 import DumbbellImage from '../../assets/dumbell.png'
 import { ReactComponent as FlameIcon } from '../../assets/flame.svg';
-import { useState } from "react";
-import { Link} from 'react-router-dom';
+import { useState} from "react";
 import {motion} from 'framer-motion';
+import { SignInButton, UserButton, SignedIn, SignedOut} from "@clerk/clerk-react";
 
 const Hero = () => {
     const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -21,7 +21,8 @@ const Hero = () => {
     const transitionTwo = {type: 'spring', duration: 3.5}
 
     return (
-        <div className="hero">
+        <div>
+            <div className="hero">
             <div className="blur hero-blur"></div>
             <div className="blur hero-blur-two"></div>
 
@@ -35,7 +36,6 @@ const Hero = () => {
                     whileInView = {{left: '8px'}}
                     transition={{...transition, type: 'tween'}}
                     >
-
                     </motion.div>
                     <span className="orbitronFront">Combining Fitness and Diet Tracking with Artificial Intelligence</span>
                 </div>
@@ -52,13 +52,25 @@ const Hero = () => {
                 </div>
             </div>
             <div className = "right-h">
-                <button className="btn-two" onClick={toggleDropdown}>Account</button>   
-                {dropdownVisible && (
-                    <div className="dropdown-menu">
-                        <Link to="/login" className="dropdown-item">Login </Link>
-                        <Link to="/register" className="dropdown-item">Register </Link>    
+                <SignedOut>
+                    <SignInButton>
+                        <button className="btn-two">Sign In</button>   
+                    </SignInButton>
+                </SignedOut>
+                <SignedIn>
+                    <div className="avatar-position">
+                    <UserButton
+                        appearance={{
+                            elements: {
+                            avatarBox: {
+                            width: "40px",
+                            height: "40px",
+                            },
+                            },
+                        }}
+                    />
                     </div>
-                )}
+                </SignedIn>
 
                 <img src = {HeroImage} alt="" className="hero-image"/> 
                 <motion.img 
@@ -110,7 +122,10 @@ const Hero = () => {
 
             </div>
         </div>
+        </div>
+
     )
+        
 }
 
 export default Hero;
