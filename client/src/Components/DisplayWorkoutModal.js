@@ -34,16 +34,14 @@ function DisplayWorkoutModal({ closeDisplayWorkoutModel, onSubmit, defaultValue 
         e.preventDefault();
         if (!validateForm()) return;
     
-        try {
-            const userId = user.id;
-    
-            const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/create-table`, "POST", {
-                userId,
+        try {    
+            const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/check-date-exists`, "POST", {
+                userID: user.id,
                 date: formState.date,
             });
     
-            if (response.message === "A workout already exists for this date.") {
-                setErrors(response.message);
+            if (response.workoutExists) {
+                setErrors("A workout already exists for this date.");
                 return;
             }
     
@@ -51,7 +49,7 @@ function DisplayWorkoutModal({ closeDisplayWorkoutModel, onSubmit, defaultValue 
             closeDisplayWorkoutModel();
         } catch (error) {
             console.error("Error creating workout table:", error);
-            setErrors(error.message); // Display the error message from the backend
+            setErrors(error.message); 
         }
     };
 
@@ -67,15 +65,18 @@ function DisplayWorkoutModal({ closeDisplayWorkoutModel, onSubmit, defaultValue 
                 date: formState.date,
             });
     
-            if (response.message === "No workout already exists for this date.") {
+            if (response.message === "No workout exists for this date.") {
                 setErrors(response.message);
                 return;
+            }
+            else {
+                window.location.reload();
             }
     
             closeDisplayWorkoutModel();
         } catch (error) {
             console.error("Error deleting workout table:", error);
-            setErrors(error.message); // Display the error message from the backend
+            setErrors(error.message); 
         }
     };
 

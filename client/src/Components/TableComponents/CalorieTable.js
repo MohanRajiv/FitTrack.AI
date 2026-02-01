@@ -20,7 +20,7 @@ function CalorieTable({rows, deleteRow, editRow}) {
                     {
                         rows.map((row, idx) => {
                             return <tr key = {idx}>
-                                <td>{row.foodName}</td>
+                                <td>{row.food_name}</td>
                                 <td>{row.protein}</td>
                                 <td>{row.fats}</td>
                                 <td>{row.carbs}</td>

@@ -32,10 +32,10 @@ function FoodDiary() {
         if (response.foods && response.foods.length > 0) {
             const mealMap = new Map();
             response.foods.forEach((row) => {
-                if (!mealMap.has(row.meal)) {
-                  mealMap.set(row.meal, []);
+                if (!mealMap.has(row.meal_type)) {
+                  mealMap.set(row.meal_type, []);
                 }
-                mealMap.get(row.meal).push(row);
+                mealMap.get(row.meal_type).push(row);
             });
   
             const tables = Array.from(mealMap).map(([meal, rows]) => ({
@@ -88,7 +88,7 @@ function FoodDiary() {
     console.log(row)
     setRowToEdit({
       ...row,
-      name: row.foodName || row.name || "",
+      name: row.food_name || row.name || "",
     });    
     setFoodModalOpen(true);
   };

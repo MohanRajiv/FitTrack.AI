@@ -3,6 +3,7 @@ import React, { useState } from "react";
 function Modal({ closeModel, onSubmit, defaultValue, isEdit, date }) {
     const [formState, setFormState] = useState(
         defaultValue || {
+            exercise: "",
             weight: "",
             reps: "",
             sets: "",
@@ -55,6 +56,14 @@ function Modal({ closeModel, onSubmit, defaultValue, isEdit, date }) {
         >
             <div className="modal">
                 <form>
+                    <div className="form-group">
+                        <label htmlFor="exercise">Exercise</label>
+                        <input
+                            name="exercise"
+                            value={formState.exercise}
+                            readOnly
+                        />
+                    </div>
                     <div className="form-group">
                         <label htmlFor="weight">Weight</label>
                         <input

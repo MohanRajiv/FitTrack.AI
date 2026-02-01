@@ -23,7 +23,7 @@ function SelectFood({closeFoodModal, onSubmit, defaultValue, isEdit, inSearch, e
     );
 
     function arrayToFormState(arr) {
-        const allowedKeys = ["name", "protein", "carbs", "fats", "calories"];
+        const allowedKeys = ["food_name", "protein", "carbs", "fats", "calories"];
         const obj = {};
         for (let i = 0; i < arr.length - 1; i += 2) {
             const key = arr[i].toLowerCase();
@@ -137,11 +137,11 @@ function SelectFood({closeFoodModal, onSubmit, defaultValue, isEdit, inSearch, e
                         <select
                             name="foodSelect"
                             onChange={(e) => {
-                            const selected = foodList.find(food => food.foodName === e.target.value);
+                            const selected = foodList.find(food => food.food_name === e.target.value);
                             if (selected) {
                                 setFormState(prev => ({
                                     ...prev,
-                                    name: selected.foodName,   // 👈 map foodName → name for formState
+                                    name: selected.food_name,   // 👈 map foodName → name for formState
                                     protein: selected.protein,
                                     carbs: selected.carbs,
                                     fats: selected.fats,
@@ -151,13 +151,13 @@ function SelectFood({closeFoodModal, onSubmit, defaultValue, isEdit, inSearch, e
                             }}
                             defaultValue=""
                         >
-    <option value="" disabled>Select a food</option>
-    {foodList.map(food => (
-        <option key={food.id} value={food.foodName}>
-            {food.foodName}
-        </option>
-    ))}
-</select>
+                            <option value="" disabled>Select a food</option>
+                            {foodList.map(food => (
+                                <option key={food.id} value={food.food_name}>
+                                    {food.food_name}
+                                </option>
+                            ))}
+                        </select>
 
                     </div>}
                     {(inSearch || isEdit) && <div className="form-group">

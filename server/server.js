@@ -69,7 +69,8 @@ app.post("/get-agent-text", upload.single("image"), async (req, res) => {
     
     content.push({ 
       type: "text", 
-      text: `Identify this food and use the get_nutrition_data tool to find the top ${pageSize} results by setting the 'count' parameter to ${pageSize}. User query: ${userInput || "Analyze this image."}` 
+      text: `User query: ${userInput || "Analyze this image."}. 
+             Please return exactly ${pageSize} different variations/results for this food.` 
     });
 
     if (imageFile) {
@@ -232,50 +233,27 @@ app.post("/sync-user", (req, res) => {
 });
 
 /*
-  Workout Integration
+  Workout Table Endpoints
 */
-app.post("/create-table", (req, res) => {
-  const { userId, date } = req.body;
+app.post("/create-workout-table", (req, res) => {
+  const createTableQuery = `
+  CREATE TABLE IF NOT EXISTS exercises (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(255),
+    exercise_name VARCHAR(255),
+    weight FLOAT,
+    reps INT,
+    workout_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );`;
 
-  if (!userId || !date) {
-    console.error("Missing userId or date in request body:", req.body);
-    res.status(400).send("Missing userId or date in request body.");
-    return;
-  }
-
-  const sanitizedDate = date.replace(/-/g, '_');
-  const tableName = `user_${userId}_exercises_${sanitizedDate}`;
-
-  const checkTableQuery = `SHOW TABLES LIKE '${tableName}'`;
-  db.query(checkTableQuery, (err, result) => {
+  db.query(createTableQuery, (err) => { 
     if (err) {
-      console.error("Error checking table existence:", err);
-      res.status(500).send("Error checking table existence.");
-      return;
-    }
-
-    if (result.length > 0) {
-      res.status(409).json({ message: "A workout already exists for this date." });
-      return;
-    }
-
-    const createTableQuery = `
-      CREATE TABLE IF NOT EXISTS \`${tableName}\` (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        exercise VARCHAR(255),
-        weight INT,
-        reps INT,
-        date DATE
-      )`;
-
-    db.query(createTableQuery, (err) => {
-      if (err) {
         console.error("Error creating table:", err);
         res.status(500).send("Error creating exercise table.");
         return;
-      }
-      res.status(200).send("Exercise table created successfully.");
-    });
+    }
+    res.status(200).send("Exercise table created successfully.");
   });
 });
 
@@ -288,32 +266,19 @@ app.post("/delete-workout-table", (req, res) => {
     return;
   }
 
-  const sanitizedDate = date.replace(/-/g, '_');
-  const tableName = `user_${userID}_exercises_${sanitizedDate}`;
-
-  const checkTableQuery = `SHOW TABLES LIKE '${tableName}'`;
-  db.query(checkTableQuery, (err, result) => {
+  const deleteUserExercisesQuery = `DELETE FROM exercises WHERE user_id = ? AND workout_date = ?`;
+  db.query(deleteUserExercisesQuery, [userID, date], (err, result) => {
     if (err) {
-      console.error("Error checking table existence:", err);
-      res.status(500).send("Error checking table existence.");
+      console.error("Error deleting from table:", err);
+      res.status(500).send("Error deleting from exercise table.");
       return;
     }
 
-    if (result.length == 0) {
-      res.status(409).json({ message: "No workout already exists for this date." });
-      return;
+    if (result && result.affectedRows === 0) {
+      return res.status(404).json({ message: "No workout exists for this date." });
     }
 
-    const dropTableQuery = `DROP TABLE \`${tableName}\``;
-
-    db.query(dropTableQuery, (err) => {
-      if (err) {
-        console.error("Error deleting table:", err);
-        res.status(500).send("Error deleting exercise table.");
-        return;
-      }
-      res.status(200).send("Exercise table deleting successfully.");
-    });
+    res.status(200).send("Succesfully deleted from exercise table.");
   });
 });
 
@@ -327,25 +292,19 @@ app.post("/add-set", (req, res) => {
       return;
   }
 
-  const sanitizedDate = date.replace(/-/g, '_');
-  const tableName = `user_${userID}_exercises_${sanitizedDate}`;
-
   const query = `
-      INSERT INTO \`${tableName}\` (exercise, weight, reps, date)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO exercises (user_id, exercise_name, weight, reps, workout_date)
+      VALUES (?, ?, ?, ?, ?)
   `;
 
-  db.query(query, [exercise, weight, reps, date], (err, result) => {
+  db.query(query, [userID, exercise, weight, reps, date], (err, result) => {
       if (err) {
           console.error("Error adding set:", err);
           res.status(500).send("Error adding set to database.");
           return;
       }
       console.log("Insert result:", result);
-      const insertedId = result.insertId;
-      const insertedWeight = result.weight;
-      const insertedReps = result.reps;
-      res.status(200).json({ id: insertedId, weight: insertedWeight, reps: insertedReps, date });
+      res.status(200).json({ id: result.insertId, weight, reps, date });
   });
 });
   
@@ -358,12 +317,9 @@ app.post("/delete-set", (req, res) => {
       return;
   }
 
-  const sanitizedDate = date.replace(/-/g, '_');
-  const tableName = `user_${userID}_exercises_${sanitizedDate}`;
+  const query = `DELETE FROM exercises WHERE user_id =? AND id =? AND workout_date=?`;
 
-  const query = `DELETE FROM \`${tableName}\` WHERE id = ?;`;
-
-  db.query(query, [id], (err, result) => {
+  db.query(query, [userID, id, date], (err, result) => {
       if (err) {
           console.error("Error deleting set:", err);
           res.status(500).send("Error deleting set from database.");
@@ -374,95 +330,74 @@ app.post("/delete-set", (req, res) => {
   });
 });
 
-  app.post("/edit-set", (req, res) => {
-    const { userID, id, weight, reps, date } = req.body;
-    console.log("Received data for /edit-set:", { userID, id, weight, reps });
+app.post("/edit-set", (req, res) => {    
+  const { userID, id, weight, reps, date } = req.body;
+  console.log("Received data for /edit-set:", { userID, id, weight, reps });
   
-    if (!userID || !id || weight === undefined || reps === undefined || !date) {
-        console.error("Missing or invalid fields in request body:", req.body);
-        res.status(400).send("Missing or invalid fields in request body.");
-        return;
+  if (!userID || !id || weight === undefined || reps === undefined || !date) {
+    console.error("Missing or invalid fields in request body:", req.body);
+    res.status(400).send("Missing or invalid fields in request body.");
+    return;
+  }
+  
+  const query = `UPDATE exercises SET weight = ?, reps = ? WHERE id =? AND user_id=? AND workout_date=?`;
+  console.log("Executing query:", query);
+  
+  db.query(query, [weight, reps, id, userID, date], (err, result) => {
+    if (err) {
+      console.error("Error editing set:", err);
+      res.status(500).send("Error editing set in database.");
+      return;
+    }
+    console.log("Set edited successfully:", result);
+    res.status(200).send("Set edited successfully.");
+  });
+});
+
+app.post("/get-exercises", (req, res) => {
+  const { userID, date } = req.body;
+  
+  if (!userID || !date) {
+    return res.status(400).send("Missing required fields.");
+  }
+  
+  const fetchDataQuery = `SELECT * FROM exercises WHERE user_id = ? AND workout_date = ?`;
+
+  db.query(fetchDataQuery, [userID, date], (err, rows) => {
+    if (err) {
+      console.error("Error fetching exercises:", err);
+      return res.status(500).send("Error fetching exercises.");
+    } 
+  
+    if (rows.length === 0) {
+      console.log(`No entries found for User: ${userID} on Date: ${date}`);
+      return res.status(200).json({ exercises: [] });
     }
   
-    const sanitizedDate = date.replace(/-/g, '_');
-    const tableName = `user_${userID}_exercises_${sanitizedDate}`;
+    console.log("Fetched exercises:", rows);
+    res.status(200).json({ exercises: rows });
+  });
+});
+
+app.post("/save-routine", (req, res) => {
+  const { userID, date, exercises } = req.body;
   
-    const query = `UPDATE \`${tableName}\` SET weight = ?, reps = ? WHERE id = ?`;
-    console.log("Executing query:", query);
+  if (!userID || !date || !exercises) {
+    console.error("Missing required fields:", req.body);
+    return res.status(400).send("Missing required fields.");
+  }
   
-    db.query(query, [weight, reps, id], (err, result) => {
-        if (err) {
-            console.error("Error editing set:", err);
-            res.status(500).send("Error editing set in database.");
-            return;
-        }
-        console.log("Set edited successfully:", result);
-        res.status(200).send("Set edited successfully.");
+  const insertQuery = `
+    INSERT INTO exercises (user_id, exercise_name, weight, reps, workout_date)
+    VALUES ?
+  `;
+  
+  const values = [];
+  exercises.forEach((exerciseObj) => {
+    exerciseObj.rows.forEach((row) => {
+      values.push([exerciseObj.exercise, row.weight, row.reps, date]);
     });
   });
-
-  app.post("/get-exercises", (req, res) => {
-    const { userID, date } = req.body;
-  
-    if (!userID || !date) {
-        console.error("Missing required fields:", req.body);
-        res.status(400).send("Missing required fields.");
-        return;
-    }
-  
-    const sanitizedDate = date.replace(/-/g, '_');
-    const tableName = `user_${userID}_exercises_${sanitizedDate}`;
-  
-    const checkTableQuery = `SHOW TABLES LIKE '${tableName}'`;
-    db.query(checkTableQuery, (err, result) => {
-        if (err) {
-            console.error("Error checking table existence:", err);
-            res.status(500).send("Error checking table existence.");
-            return;
-        }
-  
-        if (result.length === 0) {
-            console.log("Table does not exist:", tableName);
-            res.status(404).json({ message: "No workout found for this date." });
-            return;
-        }
-  
-        const fetchDataQuery = `SELECT * FROM \`${tableName}\``;
-        db.query(fetchDataQuery, (err, rows) => {
-            if (err) {
-                console.error("Error fetching exercises:", err);
-                res.status(500).send("Error fetching exercises.");
-                return;
-            }
-  
-            console.log("Fetched exercises:", rows);
-            res.status(200).json({ exercises: rows });
-        });
-    });
-  });
-
-  app.post("/save-routine", (req, res) => {
-    const { userID, date, exercises } = req.body;
-  
-    if (!userID || !date || !exercises) {
-      console.error("Missing required fields:", req.body);
-      return res.status(400).send("Missing required fields.");
-    }
-  
-    const sanitizedDate = date.replace(/-/g, "_");
-    const tableName = `user_${userID}_exercises_${sanitizedDate}`;
-  
-    const insertQuery = `
-      INSERT INTO \`${tableName}\` (exercise, weight, reps, date)
-      VALUES ?
-    `;
-  
-    const values = [];
-    exercises.forEach((exerciseObj) => {
-      exerciseObj.rows.forEach((row) => {
-        values.push([exerciseObj.exercise, row.weight, row.reps, date]);
-      });
-    });
   
     db.query(insertQuery, [values], (err, result) => {
       if (err) {
@@ -471,58 +406,35 @@ app.post("/delete-set", (req, res) => {
       }
       res.json({ success: true, inserted: result.affectedRows });
     });
-  });  
+});  
 
   /*
-    Calorie Tracker Integration
+    Nutrition Log Integration
   */
-  app.post("/create-tracker", (req, res) => {
-    const { userId, date } = req.body;
-
-    if (!userId || !date) {
-      onsole.error("Missing userId or date in request body:", req.body);
-      res.status(400).send("Missing userId or date in request body.");
-      return;
-    }
-
-    const sanitizedDate = date.replace(/-/g, '_');
-    const tableName = `user_${userId}_calorieLog_${sanitizedDate}`;
-
-    const checkTableQuery = `SHOW TABLES LIKE '${tableName}'`;
-    db.query(checkTableQuery, (err, result) => {
+  app.post("/create-nutrition-table", (req, res) => {
+    const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS nutrition_logs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id VARCHAR(255),
+      meal_type VARCHAR(50),
+      food_name VARCHAR(255),
+      calories FLOAT,
+      protein FLOAT,
+      carbs FLOAT,
+      fats FLOAT,
+      log_date DATE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );`;
+    
+    db.query(createTableQuery, (err) => { 
       if (err) {
-        console.error("Error checking table existence:", err);
-        res.status(500).send("Error checking table existence.");
-        return;
-      }
-
-      if (result.length > 0) {
-        res.status(409).json({ message: "A calorie log already exists for this date." });
-        return;
-      }
-
-      const createTableQuery = `
-        CREATE TABLE IF NOT EXISTS \`${tableName}\` (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          meal VARCHAR(255),
-          foodName VARCHAR(255),
-          protein INT,
-          fats INT,
-          carbs INT,
-          calories INT,
-          date DATE
-        )`;
-
-      db.query(createTableQuery, (err) => {
-        if (err) {
           console.error("Error creating table:", err);
-          res.status(500).send("Error creating calorie table.");
+          res.status(500).send("Error creating exercise table.");
           return;
-        }
-        res.status(200).send("Calorie table created successfully.");
-      });
+      }
+      res.status(200).send("Exercise table created successfully.");
     });
-  });
+  });    
 
   app.post("/delete-tracker", (req, res) => {
     const { userID, date } = req.body;
@@ -533,32 +445,19 @@ app.post("/delete-set", (req, res) => {
       return;
     }
   
-    const sanitizedDate = date.replace(/-/g, '_');
-    const tableName = `user_${userID}_calorieLog_${sanitizedDate}`;
-  
-    const checkTableQuery = `SHOW TABLES LIKE '${tableName}'`;
-    db.query(checkTableQuery, (err, result) => {
+    const deleteUserExercisesQuery = `DELETE FROM nutrition_logs WHERE user_id = ? AND log_date = ?`;
+    db.query(deleteUserExercisesQuery, [userID, date], (err, result) => {
       if (err) {
-        console.error("Error checking table existence:", err);
-        res.status(500).send("Error checking table existence.");
+        console.error("Error deleting from table:", err);
+        res.status(500).send("Error deleting from exercise table.");
         return;
       }
-  
-      if (result.length == 0) {
-        res.status(409).json({ message: "No calorie log already exists for this date." });
-        return;
+
+      if (result && result.affectedRows === 0) {
+        return res.status(404).json({ message: "No nutrition log exists for this date." });
       }
-  
-      const dropTableQuery = `DROP TABLE \`${tableName}\``;
-  
-      db.query(dropTableQuery, (err) => {
-        if (err) {
-          console.error("Error deleting calorie log:", err);
-          res.status(500).send("Error deleting calorie log.");
-          return;
-        }
-        res.status(200).send("Calorie Log deleting successfully.");
-      });
+
+      res.status(200).send("Succesfully deleted from exercise table.");
     });
   });
 
@@ -572,15 +471,12 @@ app.post("/delete-set", (req, res) => {
         return;
     }
   
-    const sanitizedDate = date.replace(/-/g, '_');
-    const tableName = `user_${userId}_calorieLog_${sanitizedDate}`;
-  
     const query = `
-        INSERT INTO \`${tableName}\` (meal, foodName, protein, fats, carbs, calories, date)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO nutrition_logs (user_id, meal_type, food_name, protein, fats, carbs, calories, log_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
   
-    db.query(query, [meal, foodName, protein, fats, carbs, calories, date], (err, result) => {
+    db.query(query, [userId, meal, foodName, protein, fats, carbs, calories, date], (err, result) => {
         if (err) {
             console.error("Error adding food:", err);
             res.status(500).send("Error adding food to database.");
@@ -599,19 +495,17 @@ app.post("/delete-set", (req, res) => {
         res.status(400).send("Missing required fields.");
         return;
     }
+
+    const query = `DELETE FROM nutrition_logs WHERE id = ? AND user_id = ? AND log_date = ?`;
   
-    const sanitizedDate = date.replace(/-/g, '_');
-    const tableName = `user_${userID}_calorieLog_${sanitizedDate}`;
-  
-    const query = `DELETE FROM \`${tableName}\` WHERE id = ?;`;
-  
-    db.query(query, [id], (err, result) => {
+    db.query(query, [id, userID, date], (err) => {
         if (err) {
             console.error("Error deleting food:", err);
             res.status(500).send("Error deleting food from database.");
             return;
         }
-        console.log("food deleted successfully:", result);
+
+        console.log("Food deleted successfully:");
         res.status(200).send("Food deleted successfully.");
     });
   });
@@ -625,14 +519,11 @@ app.post("/delete-set", (req, res) => {
         res.status(400).send("Missing or invalid fields in request body.");
         return;
     }
-  
-    const sanitizedDate = date.replace(/-/g, '_');
-    const tableName = `user_${userID}_calorieLog_${sanitizedDate}`;
-  
-    const query = `UPDATE \`${tableName}\` SET protein = ?, fats = ?, carbs = ?, calories = ? WHERE id = ?`;
+
+    const query = `UPDATE nutrition_logs SET protein = ?, fats = ?, carbs = ?, calories = ? WHERE id = ? AND user_id = ? AND log_date = ?`;
     console.log("Executing query:", query);
   
-    db.query(query, [protein, fats, carbs, calories, id], (err, result) => {
+    db.query(query, [protein, fats, carbs, calories, id, userID, date], (err, result) => {
         if (err) {
             console.error("Error editing food:", err);
             res.status(500).send("Error editing food in database.");
@@ -644,49 +535,26 @@ app.post("/delete-set", (req, res) => {
   });
 
   app.post("/create-food-list", (req, res) => {
-    const { userId } = req.body;
-  
-    if (!userId) {
-      console.error("Missing userID in request body:", req.body); 
-      res.status(400).send("Missing userId in request body.");
-      return;
-    }
-  
-    const tableName = `user_${userId}_foodList`;
-  
-    const checkTableQuery = `SHOW TABLES LIKE '${tableName}'`;
-    db.query(checkTableQuery, (err, result) => {
+    const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS food_list (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id VARCHAR(255),
+      food_name VARCHAR(255),
+      calories FLOAT,
+      protein FLOAT,
+      carbs FLOAT,
+      fats FLOAT
+    );`;
+    
+    db.query(createTableQuery, (err) => { 
       if (err) {
-        console.error("Error checking table existence:", err);
-        res.status(500).send("Error checking table existence.");
-        return;
-      }
-  
-      if (result.length > 0) {
-        return;
-      }
-  
-      const createTableQuery = `
-        CREATE TABLE IF NOT EXISTS \`${tableName}\` (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          foodName VARCHAR(255),
-          protein INT,
-          fats INT,
-          carbs INT,
-          calories INT
-        )`; 
-  
-      db.query(createTableQuery, (err) => {
-        if (err) {
-          console.error("Error creating food list:", err);
+          console.error("Error creating table:", err);
           res.status(500).send("Error creating food list.");
           return;
-        }
-        res.status(200).send("Food List created successfully.");
-      });
+      }
+      res.status(200).send("Food list created successfully.");
     });
-  });
-  
+  });    
 
   app.post("/add-food-to-list", (req, res) => {
     const { userID, name, protein, fats, carbs, calories } = req.body;
@@ -695,25 +563,23 @@ app.post("/delete-set", (req, res) => {
         return res.status(400).send("Missing required fields.");
     }
 
-    const tableName = `user_${userID}_foodList`;
+    const checkQuery = `SELECT * FROM food_list WHERE food_name = ? AND user_id = ? LIMIT 1`;
 
-    // Step 1: Check if food already exists in the user's list
-    const checkQuery = `SELECT * FROM \`${tableName}\` WHERE foodName = ? LIMIT 1`;
-
-    db.query(checkQuery, [name], (err, results) => {
+    db.query(checkQuery, [name, userID], (err, results) => {
         if (err) {
             console.error("Error checking food in list:", err);
             return res.status(500).send("Database error.");
         }
 
         if (results.length > 0) {
-            // Food already exists
             return res.status(409).send("Food already exists in the list.");
         }
 
-        // Step 2: Insert only if not exists
-        const insertQuery = `INSERT INTO \`${tableName}\` (foodName, protein, fats, carbs, calories) VALUES (?, ?, ?, ?, ?)`;
-        db.query(insertQuery, [name, protein, fats, carbs, calories], (err, result) => {
+        const insertQuery = 
+          `INSERT INTO food_list (food_name, protein, fats, carbs, calories, user_id) 
+           VALUES (?, ?, ?, ?, ?, ?)`;
+
+        db.query(insertQuery, [name, protein, fats, carbs, calories, userID], (err, result) => {
             if (err) {
                 console.error("Error adding food to list:", err);
                 return res.status(500).send("Database error.");
@@ -730,10 +596,9 @@ app.post("/delete-set", (req, res) => {
       return res.status(400).send("Missing required fields.");
     }
 
-    const tableName = `user_${userID}_foodList`;
-    const query = `SELECT * FROM \`${tableName}\``;
+    const query = `SELECT * FROM food_list WHERE user_id=?`;
 
-    db.query(query, (err, results) => {
+    db.query(query, [userID], (err, results) => {
         if (err) {
             console.error("Error fetching food list:", err);
             return res.status(500).send("Database error.");
@@ -751,11 +616,8 @@ app.post("/delete-set", (req, res) => {
         return;
     }
   
-    const sanitizedDate = date.replace(/-/g, '_');
-    const tableName = `user_${userID}_calorieLog_${sanitizedDate}`;
-  
-    const checkTableQuery = `SHOW TABLES LIKE '${tableName}'`;
-    db.query(checkTableQuery, (err, result) => {
+    const checkTableQuery = `SELECT COUNT(1) FROM nutrition_logs WHERE user_id =? AND log_date=?`;
+    db.query(checkTableQuery, [userID, date], (err, result) => {
         if (err) {
             console.error("Error checking table existence:", err);
             res.status(500).send("Error checking table existence.");
@@ -763,13 +625,13 @@ app.post("/delete-set", (req, res) => {
         }
   
         if (result.length === 0) {
-            console.log("Table does not exist:", tableName);
+            console.log("Row does not exist:");
             res.status(404).json({ message: "No calorie log found for this date." });
             return;
         }
   
-        const fetchDataQuery = `SELECT * FROM \`${tableName}\``;
-        db.query(fetchDataQuery, (err, rows) => {
+        const fetchDataQuery = `SELECT * FROM nutrition_logs WHERE user_id =? AND log_date=?`;
+        db.query(fetchDataQuery,  [userID, date], (err, rows) => {
             if (err) {
                 console.error("Error fetching calorie log:", err);
                 res.status(500).send("Error fetching calorie log.");
@@ -782,89 +644,75 @@ app.post("/delete-set", (req, res) => {
     });
   });
 
+  app.post("/check-date-exists", (req, res) => {
+    const { userID, date } = req.body;
+  
+    if (!userID || !date) {
+      return res.status(400).json({ error: "Missing userID or date" });
+    }
+  
+    const workoutCheck = "SELECT COUNT(*) AS count FROM exercises WHERE user_id = ? AND workout_date = ?";
+    const foodCheck = "SELECT COUNT(*) AS count FROM nutrition_logs WHERE user_id = ? AND log_date = ?";
+  
+    db.query(workoutCheck, [userID, date], (err, workoutResult) => {
+      if (err) return res.status(500).json({ error: "Workout check failed" });
+  
+      db.query(foodCheck, [userID, date], (err, foodResult) => {
+        if (err) return res.status(500).json({ error: "Food check failed" });
+  
+        res.status(200).json({
+          workoutExists: workoutResult[0].count > 0,
+          foodExists: foodResult[0].count > 0
+        });
+      });
+    });
+  });
+
   app.post("/get-user-logs", (req, res) => {
     const { userID } = req.body;
   
     if (!userID) {
       console.error("Missing required field: userID");
-      res.status(400).send("Missing required field: userID");
-      return;
+      return res.status(400).send("Missing required field: userID");
     }
   
-    const workoutTablePattern = `user_${userID}_exercises_%`;
-    const foodTablePattern = `user_${userID}_calorieLog_%`;
-  
     const workoutQuery = `
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = DATABASE() 
-      AND table_name LIKE '${workoutTablePattern}'
+      SELECT DISTINCT workout_date 
+      FROM exercises 
+      WHERE user_id = ?
+      ORDER BY workout_date DESC
     `;
   
     const foodQuery = `
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = DATABASE() 
-      AND table_name LIKE '${foodTablePattern}'
+      SELECT DISTINCT log_date 
+      FROM nutrition_logs 
+      WHERE user_id = ?
+      ORDER BY log_date DESC
     `;
   
-    db.query(workoutQuery, (err, workoutResults) => {
+    db.query(workoutQuery, [userID], (err, workoutResults) => {
       if (err) {
-        console.error("Error fetching workout tables:", err);
-        res.status(500).send("Error fetching workout tables.");
-        return;
+        console.error("Error fetching workout dates:", err);
+        return res.status(500).send("Error fetching workout dates.");
       }
   
-      console.log("Workout tables:", workoutResults);
+      const workoutDates = workoutResults.map(row => {
+        const d = new Date(row.workout_date);
+        return d.toISOString().split('T')[0];
+      });
   
-      const workoutDates = workoutResults
-        .filter(row => row.table_name || row.TABLE_NAME)
-        .map(row => {
-          const tableName = row.table_name || row.TABLE_NAME;
-          const parts = tableName.split("_");
-
-          if (parts.length >= 3) {
-            const day = parts.pop();
-            const month = parts.pop();
-            const year = parts.pop();
-            return `${year}-${month}-${day}`;
-          }
-    
-          console.warn("Unexpected table name format:", tableName);
-          return null;
-        })
-      .filter(Boolean);
-  
-      // 2️⃣ Get food tables
-      db.query(foodQuery, (err, foodResults) => {
+      db.query(foodQuery, [userID], (err, foodResults) => {
         if (err) {
-          console.error("Error fetching food tables:", err);
-          res.status(500).send("Error fetching food tables.");
-          return;
+          console.error("Error fetching food dates:", err);
+          return res.status(500).send("Error fetching food dates.");
         }
   
-        console.log("Food tables:", foodResults);
-
-        const foodDates = foodResults
-        .filter(row => row.table_name || row.TABLE_NAME)
-        .map(row => {
-          const tableName = row.table_name || row.TABLE_NAME;
-          const parts = tableName.split("_");
-
-          if (parts.length >= 3) {
-            const day = parts.pop();
-            const month = parts.pop();
-            const year = parts.pop();
-            return `${year}-${month}-${day}`;
-          }
-    
-          console.warn("Unexpected food table name:", tableName);
-          return null;
-        })
-        .filter(Boolean);
+        const foodDates = foodResults.map(row => {
+          const d = new Date(row.log_date);
+          return d.toISOString().split('T')[0];
+        });
   
-        console.log("✅ Workout Dates:", workoutDates);
-        console.log("✅ Food Dates:", foodDates);
+        console.log(`✅ Found ${workoutDates.length} workout days and ${foodDates.length} food days.`);
   
         res.status(200).json({
           workoutDates,
@@ -872,7 +720,7 @@ app.post("/delete-set", (req, res) => {
         });
       });
     });
-  });  
+  });
 
   const PORT = 3001;
   app.listen(PORT, () => {

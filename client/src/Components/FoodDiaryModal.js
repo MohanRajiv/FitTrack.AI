@@ -34,20 +34,14 @@ function FoodDiaryModal({closeFoodDiaryModal, onSubmit, defaultValue}) {
         e.preventDefault();
         if (!validateForm()) return;
     
-        try {
-            const userId = user.id;
-    
-            const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/create-tracker`, "POST", { 
-                userId,
+        try {    
+            const response = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/check-date-exists`, "POST", { 
+                userID: user.id,
                 date: formState.date,
             });
 
-            const responseTwo = await fetchFromBackend(`${process.env.REACT_APP_API_URL}/create-food-list`, "POST", { 
-                userId
-            });
-    
-            if (response.message === "A workout already exists for this date.") {
-                setErrors(response.message);
+            if (response.foodExists) {
+                setErrors("A workout already exists for this date.");
                 return;
             }
     
@@ -71,9 +65,12 @@ function FoodDiaryModal({closeFoodDiaryModal, onSubmit, defaultValue}) {
                 date: formState.date,
             });
 
-            if (response.message === "No calorie log already exists for this date.") {
+            if (response.message === "No nutrition log exists for this date.") {
                 setErrors(response.message);
                 return;
+            }
+            else {
+                window.location.reload();
             }
     
             closeFoodDiaryModal();

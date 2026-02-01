@@ -43,10 +43,11 @@ function WorkoutPage(){
                     if (response.exercises && response.exercises.length > 0) {
                         const exercisesMap = new Map();
                         response.exercises.forEach((row) => {
-                            if (!exercisesMap.has(row.exercise)) {
-                                exercisesMap.set(row.exercise, []);
+                            const name = row.exercise_name;
+                            if (!exercisesMap.has(name)) {
+                                exercisesMap.set(name, []);
                             }
-                            exercisesMap.get(row.exercise).push(row);
+                            exercisesMap.get(name).push(row);
                         });
     
                         const tables = Array.from(exercisesMap).map(([exercise, rows]) => ({
@@ -69,16 +70,27 @@ function WorkoutPage(){
             alert("Please select an exercise before adding.");
             return;
         }
-
-        if (exerciseTables.some((t) => t.exercise === exercise)) {
+    
+        const existingIdx = exerciseTables.findIndex((t) => t.exercise === exercise);
+        
+        if (existingIdx !== -1) {
             alert(`${exercise} already exists in your workout.`);
+            // Optional: Open the modal anyway for the existing exercise
+            // setCurrentTableIdx(existingIdx);
+            // setModelOpen(true);
             return;
         }
         
         try {
             const newTable = { exercise, rows: [] };
-            setExerciseTables([...exerciseTables, newTable]);
-            alert("Exercise added successfully");
+            const newTables = [...exerciseTables, newTable];
+            
+            setExerciseTables(newTables);
+            
+            setCurrentTableIdx(exerciseTables.length); 
+            
+            setModelOpen(true);
+            
         } catch (error) {
             alert(`Failed to add exercise: ${error.message}`);
         }
@@ -170,7 +182,13 @@ function WorkoutPage(){
             });
     
             tableToUpdate.rows = tableToUpdate.rows.filter((_, idx) => idx !== rowIdx);
-            setExerciseTables(updatedTables);
+
+            let finalTables = updatedTables;
+            if (tableToUpdate.rows.length === 0) {
+                finalTables = updatedTables.filter((_, idx) => idx !== tableIdx);
+            }
+
+            setExerciseTables(finalTables);
             console.log("Set deleted successfully.");
         } catch (error) {
             alert(`Error deleting set: ${error.message}`);
@@ -225,7 +243,8 @@ function WorkoutPage(){
             </button>
 
             {exerciseTables.map((table, idx) => (
-                <div key={idx} className="exercise-table-container">
+                table.rows.length > 0 && (
+                    <div key={idx} className="exercise-table-container">
                     <h2>{table.exercise}</h2>
                     <Table
                         rows={table.rows}
@@ -241,7 +260,8 @@ function WorkoutPage(){
                     >
                         Add Set
                     </button>
-                </div>
+                    </div>
+                )
             ))}
 
             {routineModalOpen && (
@@ -296,21 +316,32 @@ function WorkoutPage(){
             )}
             
             {modelOpen && (
-                <Modal
-                    closeModel={() => {
-                        setModelOpen(false);
-                        setRowToEdit(null);
-                    }}
-                    onSubmit={rowToEdit !== null ? handleEditSet : handleAddSet}
-                    defaultValue={
-                        rowToEdit !== null && currentTableIdx !== null
-                        ? exerciseTables[currentTableIdx].rows[rowToEdit]
-                        : { weight: "", reps: "", sets: "" }
-                    }
-                    isEdit={rowToEdit !== null}
-                    date={workoutDate} 
-                />
-            )}
+    <Modal
+        closeModel={() => {
+            setModelOpen(false);
+            setRowToEdit(null);
+            // Optional: If you want to delete the exercise table 
+            // if they close the modal without adding a set, add logic here.
+        }}
+        onSubmit={rowToEdit !== null ? handleEditSet : handleAddSet}
+        defaultValue={
+            rowToEdit !== null && currentTableIdx !== null
+            ? { 
+                ...exerciseTables[currentTableIdx]?.rows[rowToEdit], 
+                exercise: exerciseTables[currentTableIdx]?.exercise 
+              }
+            : { 
+                // We use the index to find the name, even for the newly added one
+                exercise: exerciseTables[currentTableIdx]?.exercise || "", 
+                weight: "", 
+                reps: "", 
+                sets: "" 
+            }
+        }
+        isEdit={rowToEdit !== null}
+        date={workoutDate} 
+    />
+)}
         </div>
     );
 }
