@@ -267,11 +267,30 @@ function WorkoutPage(){
             {routineModalOpen && (
                 <RoutineModal 
                     closeRoutineModal={() => setRoutineModalOpen(false)}
-                    onRoutineSubmit={async (exercises) => {
-                        console.log("Received parsed exercises:", exercises);
+                    onRoutineSubmit={async (rawExercises) => {
+                        console.log("Received parsed exercises:", rawExercises);
+
+                        let exerciseArray = [];
+            
+            if (typeof rawExercises === 'string') {
+                // Split by newline and use Regex to extract data
+                const lines = rawExercises.split("\n");
+                exerciseArray = lines
+                    .map(line => {
+                        const match = line.match(/exercise:(.*?), weight:(\d+), reps:(\d+)/i);
+                        return match ? {
+                            exercise: match[1].trim(),
+                            weight: parseInt(match[2]),
+                            reps: parseInt(match[3])
+                        } : null;
+                    })
+                    .filter(ex => ex !== null); // Remove empty lines/non-matches
+            } else {
+                exerciseArray = rawExercises;
+            }
             
                         const grouped = new Map();
-                        exercises.forEach((ex) => {
+                        exerciseArray.forEach((ex) => {
                             if (!grouped.has(ex.exercise)) {
                                 grouped.set(ex.exercise, []);
                             }

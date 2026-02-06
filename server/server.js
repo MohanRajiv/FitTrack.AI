@@ -8,6 +8,8 @@ import path from "path";
 import { fileURLToPath } from 'url'; 
 import { agent } from "./react-agent/agent.js";
 import { GoogleGenAI } from "@google/genai"; 
+import { workoutAgent } from './workout-routine-agent/agent.js';
+import { HumanMessage } from 'langchain';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,7 +17,7 @@ const __dirname = path.dirname(__filename);
 const upload = multer({ storage: multer.memoryStorage() });
 
 const exercisesData = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "public", "exercises.json"), "utf8")
+  fs.readFileSync(path.join(__dirname, "public", "exercises_with_scores.json"), "utf8")
 );
 
 const app = express();
@@ -55,6 +57,43 @@ app.get("/health", (_, res) => {
 /*
   Gemini Integration
 */
+app.post("/generate-workout", async (req, res) => {
+  try {
+    const { 
+      message, targetSets, repRange, equipment, injuries      
+    } = req.body;
+
+    if (!message || !targetSets || !equipment) {
+      return res.status(400).json({ error: "Missing required workout parameters." });
+    }
+
+    const agentResult = await workoutAgent.invoke({
+      messages: [new HumanMessage(message)],
+      user_prefs: {
+        targetSets: parseInt(targetSets),
+        repRange: repRange,
+        equipment: Array.isArray(equipment) ? equipment : [equipment],
+        injuries: injuries || "none"
+      },
+    });
+
+    const lastMessage = agentResult.messages[agentResult.messages.length - 1];
+    
+    const workoutData = lastMessage.additional_kwargs?.workout_json;
+
+    res.status(200).json({
+      reply: lastMessage.content,
+      workout: workoutData || [], 
+    });
+  } catch (error) {
+    console.error("Workout Agent Error", error);
+    res.status(500).json({
+      error: "Failed to generate workout",
+      details: error.message,
+    });
+  }
+});
+
 app.post("/get-agent-text", upload.single("image"), async (req, res) => {
   try {
     const userInput = req.body.message;
@@ -109,45 +148,6 @@ app.post("/get-agent-text", upload.single("image"), async (req, res) => {
     console.error("Route Error:", error);
     res.status(500).json({
       error: "Failed to process request",
-      details: error.message,
-    });
-  }
-});
-
-app.post("/get-gemini-exercise-text", async (req, res) => {
-  try {
-    const userInput = req.body.message;
-    if (!userInput) {
-      return res.status(400).json({ error: "No input provided" });
-    }
-
-    const exerciseNames = exercisesData.map((e) => e.name);
-
-    const parts = [];
-    const promptText = `
-      You are an exercise routine expert. The user says: "${userInput}".
-      You must ONLY use exercises from this list: ${exerciseNames.join(", ")}.
-      For each exercise you choose, output in this strict format:
-      Exercise:{}, Weight:{} lbs, Reps:{}.
-
-      - If more than one set, repeat the exercise with different reps/weight.
-      - Do not include any explanations or extra text, just the routine.
-    `;
-
-    parts.push({ text: userInput ? `${promptText}\nInput: ${userInput}` : promptText });
-
-    const response = await genAI.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: [{ role: 'user', parts: parts }],
-    });    
-
-    const output = response.text;
-
-    res.status(200).json({ reply: output });
-  } catch (error) {
-    console.error("Gemini error:", error);
-    res.status(500).json({
-      error: "Failed to fetch from Gemini",
       details: error.message,
     });
   }
@@ -383,7 +383,6 @@ app.post("/save-routine", (req, res) => {
   const { userID, date, exercises } = req.body;
   
   if (!userID || !date || !exercises) {
-    console.error("Missing required fields:", req.body);
     return res.status(400).send("Missing required fields.");
   }
   
@@ -395,18 +394,18 @@ app.post("/save-routine", (req, res) => {
   const values = [];
   exercises.forEach((exerciseObj) => {
     exerciseObj.rows.forEach((row) => {
-      values.push([exerciseObj.exercise, row.weight, row.reps, date]);
+      values.push([userID, exerciseObj.exercise, row.weight, row.reps, date]);
     });
   });
   
-    db.query(insertQuery, [values], (err, result) => {
-      if (err) {
-        console.error("Error inserting routine:", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-      res.json({ success: true, inserted: result.affectedRows });
-    });
-});  
+  db.query(insertQuery, [values], (err, result) => {
+    if (err) {
+      console.error("Error inserting routine:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json({ success: true, inserted: result.affectedRows });
+  });
+});
 
   /*
     Nutrition Log Integration
